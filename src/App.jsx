@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { det } from "mathjs";
 import { Line } from "react-chartjs-2";
 import Header1 from "./components/Header1";
 
@@ -23,7 +24,7 @@ ChartJS.register(
   Legend
 );
 
-function CholeskyDecomposition() {
+function GaussJor() {
   const [matrixSize, setMatrixSize] = useState(2);
   const [matrixA, setMatrixA] = useState(Array(2).fill().map(() => Array(2).fill(0)));
   const [vectorB, setVectorB] = useState(Array(2).fill(0));
@@ -38,7 +39,7 @@ function CholeskyDecomposition() {
   };
 
   const handleMatrixChange = (row, col, value) => {
-    const updated = matrixA.map(r => [...r]);
+    const updated = [...matrixA];
     updated[row][col] = value === "" ? "" : parseFloat(value);
     setMatrixA(updated);
   };
@@ -49,74 +50,62 @@ function CholeskyDecomposition() {
     setVectorB(updated);
   };
 
-  const calculateCholesky = () => {
-    try {
-      const n = matrixSize;
-      const A = matrixA.map(row => [...row]);
-      const B = [...vectorB];
+  const calculateGaussJordanElimination = () => {
+  try {
+    const size = matrixSize;
+    const A = matrixA.map((row) => [...row]);
+    const B = [...vectorB];
+    const n = size;
 
-      // ตรวจสอบว่า A เป็น symmetric หรือไม่
-      for (let i = 0; i < n; i++) {
-        for (let j = 0; j < n; j++) {
-          if (A[i][j] !== A[j][i]) {
-            alert("Matrix A must be symmetric for Cholesky decomposition.");
-            return;
-          }
-        }
-      }
-
-      // สร้างเมทริกซ์ L (lower triangular)
-      const L = Array(n).fill().map(() => Array(n).fill(0));
-
-      // Cholesky decomposition
-      for (let i = 0; i < n; i++) {
-        for (let j = 0; j <= i; j++) {
-          let sum = 0;
-
-          for (let k = 0; k < j; k++) {
-            sum += L[i][k] * L[j][k];
-          }
-
-          if (i === j) {
-            const val = A[i][i] - sum;
-            if (val <= 0) {
-              alert("Matrix is not positive definite.");
-              return;
-            }
-            L[i][j] = Math.sqrt(val);
-          } else {
-            L[i][j] = (1.0 / L[j][j]) * (A[i][j] - sum);
-          }
-        }
-      }
-
-      // Solve Ly = B (forward substitution)
-      const y = Array(n).fill(0);
-      for (let i = 0; i < n; i++) {
-        let sum = 0;
-        for (let j = 0; j < i; j++) {
-          sum += L[i][j] * y[j];
-        }
-        y[i] = (B[i] - sum) / L[i][i];
-      }
-
-      // Solve L^T x = y (backward substitution)
-      const x = Array(n).fill(0);
-      for (let i = n - 1; i >= 0; i--) {
-        let sum = 0;
+    // Gauss-Jordan Elimination
+    for (let i = 0; i < n; i++) {
+      // Pivot check (avoid divide by zero)
+      if (A[i][i] === 0) {
+        let swapped = false;
         for (let j = i + 1; j < n; j++) {
-          sum += L[j][i] * x[j]; // note L^T
+          if (A[j][i] !== 0) {
+            [A[i], A[j]] = [A[j], A[i]];
+            [B[i], B[j]] = [B[j], B[i]];
+            swapped = true;
+            break;
+          }
         }
-        x[i] = (y[i] - sum) / L[i][i];
+        if (!swapped) {
+          alert("Cannot solve: zero pivot encountered.");
+          return;
+        }
       }
 
-      setSolution(x.map(val => val.toFixed(6)));
-    } catch (error) {
-      alert(error.message || "Invalid input.");
-    }
-  };
+      // Normalize pivot row (make pivot = 1)
+      const pivot = A[i][i];
+      for (let j = 0; j < n; j++) {
+        A[i][j] /= pivot;
+      }
+      B[i] /= pivot;
 
-  // กำหนดความกว้างอินพุต
+      // Eliminate other rows
+      for (let k = 0; k < n; k++) {
+        if (k !== i) {
+          const factor = A[k][i];
+          for (let j = 0; j < n; j++) {
+            A[k][j] -= factor * A[i][j];
+          }
+          B[k] -= factor * B[i];
+        }
+      }
+    }
+
+    // Final solution is just the adjusted B vector
+    setSolution(B.map((val) => val.toFixed(6)));
+  } catch (error) {
+    alert("Invalid input.");
+  }
+};
+
+
+
+  // กำหนดความกว้างของ grid matrix: 60px per input + margin (4px * 2)
+  // รวมเป็น 68px ต่อ input
   const inputWidth = 60;
   const inputMargin = 8;
   const totalWidth = (inputWidth + inputMargin) * matrixSize;
@@ -125,7 +114,7 @@ function CholeskyDecomposition() {
     labels: solution.map((_, i) => `x${i + 1}`),
     datasets: [
       {
-        label: "Solution x Values",
+        label: "Variable Values",
         data: solution.map(Number),
         borderColor: "#1e3a8a",
         backgroundColor: "#93c5fd",
@@ -142,13 +131,17 @@ function CholeskyDecomposition() {
       legend: { position: "top", labels: { color: "#1e293b" } },
       title: {
         display: true,
-        text: "Cholesky Decomposition: Solution Values",
+        text: "Cramer's Rule: Solution Values",
         color: "#1e3a8a",
       },
     },
     scales: {
-      y: { title: { display: true, text: "Value", color: "#1e3a8a" } },
-      x: { title: { display: true, text: "Variable", color: "#1e3a8a" } },
+      y: {
+        title: { display: true, text: "Value", color: "#1e3a8a" },
+      },
+      x: {
+        title: { display: true, text: "Variable", color: "#1e3a8a" },
+      },
     },
   };
 
@@ -165,7 +158,7 @@ function CholeskyDecomposition() {
           boxSizing: "border-box",
         }}
       >
-        <h1 style={{ color: "#1e3a8a", textAlign: "center" }}>Cholesky Decomposition Method</h1>
+        <h1 style={{ color: "#1e3a8a", textAlign: "center" }}>Gauss Jordan Elimination</h1>
 
         {/* Matrix Size */}
         <div style={{ marginBottom: "1rem", textAlign: "center" }}>
@@ -187,7 +180,7 @@ function CholeskyDecomposition() {
 
         {/* Matrix A */}
         <div style={{ marginBottom: "1rem" }}>
-          <h3 style={{ textAlign: "center" }}>Matrix A (Symmetric, Positive Definite):</h3>
+          <h3 style={{ textAlign: "center" }}>Matrix A:</h3>
           <div
             style={{
               width: totalWidth,
@@ -255,7 +248,7 @@ function CholeskyDecomposition() {
         {/* Calculate Button */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
           <button
-            onClick={calculateCholesky}
+            onClick={calculateGaussJordanElimination}
             style={{
               padding: "0.5rem 1rem",
               backgroundColor: "#1e3a8a",
@@ -314,4 +307,7 @@ function CholeskyDecomposition() {
   );
 }
 
-export default CholeskyDecomposition;
+export default GaussJor;
+
+
+
