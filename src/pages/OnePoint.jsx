@@ -1,28 +1,8 @@
 import React, { useState } from "react";
 import { evaluate } from "mathjs";
-import { Line } from "react-chartjs-2";
-import './App.css';
-import Header from './components/Header';
-import {
-  Chart as ChartJS,
-  LineElement,
-  PointElement,
-  LinearScale,
-  Title,
-  CategoryScale,
-  Tooltip,
-  Legend,
-} from "chart.js";
-
-ChartJS.register(
-  LineElement,
-  PointElement,
-  LinearScale,
-  Title,
-  CategoryScale,
-  Tooltip,
-  Legend
-);
+import Plot from 'react-plotly.js';
+import '../App.css';
+import Header from '../components/Header';
 
 function OnePoint() {
   const [equation, setEquation] = useState("cos(x)");
@@ -54,7 +34,11 @@ function OnePoint() {
         error: error.toFixed(6),
       });
 
-      graphPoints.push({ x: iter + 1, y: xNew });
+      graphPoints.push({
+        iteration: iter + 1,
+        x_new: parseFloat(xNew.toFixed(6)),
+        error: parseFloat(error.toFixed(6)),
+      });
 
       xOld = xNew;
       iter++;
@@ -62,52 +46,6 @@ function OnePoint() {
 
     setIterations(results);
     setDataPoints(graphPoints);
-  };
-
-  const chartData = {
-    labels: dataPoints.map((point) => point.x),
-    datasets: [
-      {
-        label: `x (Approximate Root)`,
-        data: dataPoints.map((point) => point.y),
-        borderColor: "#1e3a8a",
-        backgroundColor: "#93c5fd",
-        tension: 0.3,
-        fill: false,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "top",
-        labels: { color: "#1e293b" },
-      },
-      title: {
-        display: true,
-        text: "One-Point Iteration: Convergence Graph",
-        color: "#1e3a8a",
-      },
-    },
-    scales: {
-      y: {
-        title: {
-          display: true,
-          text: "x (New Value)",
-          color: "#1e3a8a",
-        },
-      },
-      x: {
-        title: {
-          display: true,
-          text: "Iteration",
-          color: "#1e3a8a",
-        },
-      },
-    },
   };
 
   return (
@@ -158,10 +96,46 @@ function OnePoint() {
           <>
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>
             <div style={{ width: "600px", height: "400px", margin: "0 auto" }}>
-              <Line data={chartData} options={chartOptions} />
+              <Plot
+                data={[
+                  {
+                    x: dataPoints.map((p) => p.iteration),
+                    y: dataPoints.map((p) => p.x_new),
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: 'x_new',
+                    marker: { color: '#1e3a8a' },
+                  },
+                  {
+                    x: dataPoints.map((p) => p.iteration),
+                    y: dataPoints.map((p) => p.error),
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: 'error',
+                    marker: { color: '#ef4444' },
+                  },
+                ]}
+                layout={{
+                  title: {
+                    text: 'One-Point Iteration: Convergence Graph',
+                    font: { color: '#1e3a8a' }
+                  },
+                  xaxis: {
+                    title: { text: 'Iteration', font: { color: '#1e3a8a' } }
+                  },
+                  yaxis: {
+                    title: { text: 'Value', font: { color: '#1e3a8a' } }
+                  },
+                  plot_bgcolor: '#f9fafb',
+                  paper_bgcolor: '#f9fafb',
+                  font: { color: '#1e293b' },
+                  height: 400,
+                  width: 600,
+                }}
+              />
             </div>
 
-            <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Iterations</h2>
+            <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Results</h2>
             <table border="1" cellPadding="8" style={{ width: "100%", marginTop: "1rem", backgroundColor: "white" }}>
               <thead style={{ backgroundColor: "#e0e7ff" }}>
                 <tr>

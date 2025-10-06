@@ -1,28 +1,8 @@
 import React, { useState } from "react";
 import { derivative, evaluate } from "mathjs";
-import { Line } from "react-chartjs-2";
-import './App.css';
-import Header from './components/Header';
-import {
-  Chart as ChartJS,
-  LineElement,
-  PointElement,
-  LinearScale,
-  Title,
-  CategoryScale,
-  Tooltip,
-  Legend,
-} from "chart.js";
-
-ChartJS.register(
-  LineElement,
-  PointElement,
-  LinearScale,
-  Title,
-  CategoryScale,
-  Tooltip,
-  Legend
-);
+import Plot from 'react-plotly.js';
+import '../App.css';
+import Header from '../components/Header';
 
 function TaylorSeries() {
   const [equation, setEquation] = useState("sin(x)");
@@ -34,6 +14,13 @@ function TaylorSeries() {
   const [trueValue, setTrueValue] = useState(null);
   const [dataPoints, setDataPoints] = useState([]);
 
+  const factorial = (num) => {
+    if (num === 0 || num === 1) return 1;
+    let result = 1;
+    for (let i = 2; i <= num; i++) result *= i;
+    return result;
+  };
+
   const calculateTaylor = () => {
     const fx = equation;
     const aNum = parseFloat(a);
@@ -44,7 +31,6 @@ function TaylorSeries() {
     const termList = [];
 
     for (let i = 0; i <= n; i++) {
-      const derivativeExpr = i === 0 ? fx : derivative(fx, 'x', { simplify: true }).toString();
       const derivedFn = i === 0 ? fx : derivative(fx, 'x', { simplify: true, order: i }).toString();
       const f_i_a = evaluate(derivedFn, { x: aNum });
       const term = (f_i_a * Math.pow(xNum - aNum, i)) / factorial(i);
@@ -60,60 +46,28 @@ function TaylorSeries() {
 
     const actualValue = evaluate(fx, { x: xNum });
 
-    // For graph: show actual vs taylor approx from a-1 to a+1
+    // Prepare graph data (Taylor vs Actual)
     const graph = [];
     for (let x = aNum - 1; x <= aNum + 1; x += 0.1) {
-      let y = 0;
+      let yTaylor = 0;
       for (let i = 0; i <= n; i++) {
-        const f_i_a = evaluate(derivative(fx, 'x', { simplify: true, order: i }).toString(), { x: aNum });
+        const derivedFn = i === 0 ? fx : derivative(fx, 'x', { simplify: true, order: i }).toString();
+        const f_i_a = evaluate(derivedFn, { x: aNum });
         const term = (f_i_a * Math.pow(x - aNum, i)) / factorial(i);
-        y += term;
+        yTaylor += term;
       }
-      graph.push({ x: x.toFixed(2), y: y });
+      const yTrue = evaluate(fx, { x: x });
+      graph.push({
+        x: parseFloat(x.toFixed(2)),
+        yTaylor: yTaylor,
+        yTrue: yTrue,
+      });
     }
 
     setApproxValue(taylorSum);
     setTrueValue(actualValue);
     setTerms(termList);
     setDataPoints(graph);
-  };
-
-  const factorial = (num) => {
-    if (num === 0 || num === 1) return 1;
-    let result = 1;
-    for (let i = 2; i <= num; i++) result *= i;
-    return result;
-  };
-
-  const chartData = {
-    labels: dataPoints.map((p) => p.x),
-    datasets: [
-      {
-        label: `Taylor Approximation`,
-        data: dataPoints.map((p) => p.y),
-        borderColor: "#1e3a8a",
-        backgroundColor: "#93c5fd",
-        tension: 0.3,
-        fill: false,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "top", labels: { color: "#1e293b" } },
-      title: {
-        display: true,
-        text: `Taylor Series Approximation`,
-        color: "#1e3a8a",
-      },
-    },
-    scales: {
-      y: { title: { display: true, text: "f(x)", color: "#1e3a8a" } },
-      x: { title: { display: true, text: "x", color: "#1e3a8a" } },
-    },
   };
 
   return (
@@ -171,7 +125,43 @@ function TaylorSeries() {
           <>
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>
             <div style={{ width: "600px", height: "400px", margin: "0 auto" }}>
-              <Line data={chartData} options={chartOptions} />
+              <Plot
+                data={[
+                  {
+                    x: dataPoints.map((p) => p.x),
+                    y: dataPoints.map((p) => p.yTrue),
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'Actual f(x)',
+                    line: { color: '#ef4444', width: 2 },
+                  },
+                  {
+                    x: dataPoints.map((p) => p.x),
+                    y: dataPoints.map((p) => p.yTaylor),
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: `Taylor Approx (n=${order})`,
+                    line: { color: '#1e3a8a', width: 2, dash: 'dot' },
+                  },
+                ]}
+                layout={{
+                  title: {
+                    text: `Taylor Series Approximation`,
+                    font: { color: '#1e3a8a' },
+                  },
+                  xaxis: {
+                    title: { text: 'x', font: { color: '#1e3a8a' } },
+                  },
+                  yaxis: {
+                    title: { text: 'f(x)', font: { color: '#1e3a8a' } },
+                  },
+                  plot_bgcolor: '#f9fafb',
+                  paper_bgcolor: '#f9fafb',
+                  font: { color: '#1e293b' },
+                  height: 400,
+                  width: 600,
+                }}
+              />
             </div>
 
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Result</h2>

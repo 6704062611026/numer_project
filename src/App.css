@@ -52,3 +52,50 @@
     justify-content: center;
    
 }
+
+.home-container {
+  text-align: center;
+  padding: 4rem 2rem; 
+  background-color: #f8fafc;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-title {
+  font-size: 3rem;
+  color: #1e3a8a;
+  margin-bottom: 1rem;
+}
+
+.home-subtitle {
+  font-size: 1.5rem;
+  color: #475569;
+  margin-bottom: 3rem; 
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  width: 80%;
+  max-width: 1000px;
+}
+
+.category-card {
+  background-color: #1e3a8a;
+  color: white;
+  padding: 2rem;
+  border-radius: 10px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.category-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+

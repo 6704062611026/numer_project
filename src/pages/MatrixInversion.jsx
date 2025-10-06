@@ -1,30 +1,10 @@
 import React, { useState } from "react";
-import { det } from "mathjs";
-import { Line } from "react-chartjs-2";
-import Header1 from "./components/Header1";
+import { inv, multiply } from "mathjs";
+import Plot from 'react-plotly.js';
+import Header1 from "../components/Header1";
 
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
-function CramersRule() {
+function MatrixInversion() {
   const [matrixSize, setMatrixSize] = useState(2);
   const [matrixA, setMatrixA] = useState(Array(2).fill().map(() => Array(2).fill(0)));
   const [vectorB, setVectorB] = useState(Array(2).fill(0));
@@ -50,29 +30,20 @@ function CramersRule() {
     setVectorB(updated);
   };
 
-  const calculate = () => {
+  const calculateMatrixInversion = () => {
     try {
-      const detA = det(matrixA);
-      if (detA === 0) {
-        alert("Determinant is zero. No unique solution.");
-        return;
-      }
+      const A = matrixA.map((row) => [...row]);
+      const B = [...vectorB];
 
-      const results = [];
-      for (let i = 0; i < matrixSize; i++) {
-        const modified = matrixA.map((row, r) =>
-          row.map((val, c) => (c === i ? vectorB[r] : val))
-        );
-        results.push((det(modified) / detA).toFixed(6));
-      }
-      setSolution(results);
-    } catch {
-      alert("Invalid input.");
+      const inverseA = inv(A);
+      const X = multiply(inverseA, B);
+
+      setSolution(X.map((val) => Number(val).toFixed(6)));
+    } catch (error) {
+      alert("Invalid input or matrix is not invertible.");
     }
   };
 
-  // กำหนดความกว้างของ grid matrix: 60px per input + margin (4px * 2)
-  // รวมเป็น 68px ต่อ input
   const inputWidth = 60;
   const inputMargin = 8;
   const totalWidth = (inputWidth + inputMargin) * matrixSize;
@@ -98,7 +69,7 @@ function CramersRule() {
       legend: { position: "top", labels: { color: "#1e293b" } },
       title: {
         display: true,
-        text: "Cramer's Rule: Solution Values",
+        text: "Matrix Inversion: Solution Values",
         color: "#1e3a8a",
       },
     },
@@ -125,27 +96,27 @@ function CramersRule() {
           boxSizing: "border-box",
         }}
       >
-        <h1 style={{ color: "#1e3a8a", textAlign: "center" }}>Cramer's Rule</h1>
+        <h1 style={{ color: "#1e3a8a", textAlign: "center" }}>
+          Matrix Inversion Method
+        </h1>
 
-        {/* Matrix Size */}
         <div style={{ marginBottom: "1rem", textAlign: "center" }}>
           <label>Matrix Size: </label>
           <div className="s">
-          <select
-            value={matrixSize}
-            onChange={handleSizeChange}
-            style={{ marginLeft: 8, padding: "0.3rem" }}
-          >
-            {[2, 3, 4, 5, 6].map((n) => (
-              <option key={n} value={n}>
-                {n} x {n}
-              </option>
-            ))}
-          </select>
+            <select
+              value={matrixSize}
+              onChange={handleSizeChange}
+              style={{ marginLeft: 8, padding: "0.3rem" }}
+            >
+              {[2, 3, 4, 5, 6].map((n) => (
+                <option key={n} value={n}>
+                  {n} x {n}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-
-        {/* Matrix A */}
+\
         <div style={{ marginBottom: "1rem" }}>
           <h3 style={{ textAlign: "center" }}>Matrix A:</h3>
           <div
@@ -171,7 +142,9 @@ function CramersRule() {
                     key={`${i}-${j}`}
                     type="number"
                     value={val}
-                    onChange={(e) => handleMatrixChange(i, j, e.target.value)}
+                    onChange={(e) =>
+                      handleMatrixChange(i, j, e.target.value)
+                    }
                     style={{
                       width: inputWidth,
                       height: 40,
@@ -184,7 +157,6 @@ function CramersRule() {
           </div>
         </div>
 
-        {/* Vector B */}
         <div style={{ marginBottom: "1rem" }}>
           <h3 style={{ textAlign: "center" }}>Vector B:</h3>
           <div
@@ -212,10 +184,10 @@ function CramersRule() {
           </div>
         </div>
 
-        {/* Calculate Button */}
+    
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
           <button
-            onClick={calculate}
+            onClick={calculateMatrixInversion}
             style={{
               padding: "0.5rem 1rem",
               backgroundColor: "#1e3a8a",
@@ -229,17 +201,40 @@ function CramersRule() {
           </button>
         </div>
 
-        {/* Graph */}
         {solution.length > 0 && (
           <>
             <h2 style={{ color: "#1e3a8a", textAlign: "center" }}>Graph</h2>
             <div style={{ width: 600, height: 400, margin: "0 auto" }}>
-              <Line data={chartData} options={chartOptions} />
-            </div>
+  <Plot
+    data={[
+      {
+        x: solution.map((_, i) => `x${i + 1}`),
+        y: solution.map(Number),
+        type: 'bar',
+        marker: { color: '#1e3a8a' },
+      },
+    ]}
+    layout={{
+      title: { text: "Matrix Inversion: Solution Values", font: { color: '#1e3a8a' } },
+      xaxis: { title: { text: 'Variable', font: { color: '#1e3a8a' } } },
+      yaxis: { title: { text: 'Value', font: { color: '#1e3a8a' } } },
+      plot_bgcolor: '#f9fafb',
+      paper_bgcolor: '#f9fafb',
+      font: { color: '#1e293b' },
+      height: 400,
+      width: 600,
+    }}
+  />
+</div>
 
-            {/* Solution Table */}
-            <h2 style={{ marginTop: "2rem", color: "#1e3a8a", textAlign: "center" }}>
-              Solution
+            <h2
+              style={{
+                marginTop: "2rem",
+                color: "#1e3a8a",
+                textAlign: "center",
+              }}
+            >
+              Results
             </h2>
             <table
               border="1"
@@ -274,4 +269,4 @@ function CramersRule() {
   );
 }
 
-export default CramersRule;
+export default MatrixInversion;

@@ -1,28 +1,8 @@
 import React, { useState } from "react";
 import { evaluate, derivative } from "mathjs";
-import { Line } from "react-chartjs-2";
-import './App.css';
-import Header from './components/Header';
-import {
-  Chart as ChartJS,
-  LineElement,
-  PointElement,
-  LinearScale,
-  Title,
-  CategoryScale,
-  Tooltip,
-  Legend,
-} from "chart.js";
-
-ChartJS.register(
-  LineElement,
-  PointElement,
-  LinearScale,
-  Title,
-  CategoryScale,
-  Tooltip,
-  Legend
-);
+import Plot from 'react-plotly.js';
+import '../App.css';
+import Header from '../components/Header';
 
 function NewtonRaphson() {
   const [equation, setEquation] = useState("x^3 - x - 2");
@@ -78,37 +58,6 @@ function NewtonRaphson() {
     setDataPoints(graphPoints);
   };
 
-  const chartData = {
-    labels: dataPoints.map((point) => point.x),
-    datasets: [
-      {
-        label: `x (Approximate Root)`,
-        data: dataPoints.map((point) => point.y),
-        borderColor: "#1e3a8a",
-        backgroundColor: "#93c5fd",
-        tension: 0.3,
-        fill: false,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "top", labels: { color: "#1e293b" } },
-      title: {
-        display: true,
-        text: `Newton-Raphson Method: Convergence`,
-        color: "#1e3a8a",
-      },
-    },
-    scales: {
-      y: { title: { display: true, text: "x (Root)", color: "#1e3a8a" } },
-      x: { title: { display: true, text: "Iteration", color: "#1e3a8a" } },
-    },
-  };
-
   return (
     <>
       <Header />
@@ -161,7 +110,36 @@ function NewtonRaphson() {
           <>
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>
             <div style={{ width: "600px", height: "400px", margin: "0 auto" }}>
-              <Line data={chartData} options={chartOptions} />
+              <Plot
+                data={[
+                  {
+                    x: dataPoints.map((p) => p.x),
+                    y: dataPoints.map((p) => p.y),
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: 'x (Approximate Root)',
+                    line: { color: '#1e3a8a', width: 2 },
+                  },
+                ]}
+                layout={{
+                  title: {
+                    text: 'Newton-Raphson Method: Convergence',
+                    font: { color: '#1e3a8a' },
+                  },
+                  xaxis: {
+                    title: { text: 'Iteration', font: { color: '#1e3a8a' } },
+                    dtick: 1,
+                  },
+                  yaxis: {
+                    title: { text: 'x (Root)', font: { color: '#1e3a8a' } },
+                  },
+                  plot_bgcolor: '#f9fafb',
+                  paper_bgcolor: '#f9fafb',
+                  font: { color: '#1e293b' },
+                  height: 400,
+                  width: 600,
+                }}
+              />
             </div>
 
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Iterations</h2>

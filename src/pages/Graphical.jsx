@@ -1,28 +1,8 @@
 import React, { useState } from "react";
 import { evaluate } from "mathjs";
-import { Line } from "react-chartjs-2";
-import './App.css';
-import Header from './components/Header';
-import {
-  Chart as ChartJS,
-  LineElement,
-  PointElement,
-  LinearScale,
-  Title,
-  CategoryScale,
-  Tooltip,
-  Legend,
-} from "chart.js";
-
-ChartJS.register(
-  LineElement,
-  PointElement,
-  LinearScale,
-  Title,
-  CategoryScale,
-  Tooltip,
-  Legend
-);
+import Plot from 'react-plotly.js';
+import '../App.css';
+import Header from '../components/Header';
 
 function Graphical() {
   const [equation, setEquation] = useState("x^3 - x - 2");
@@ -127,8 +107,41 @@ function Graphical() {
         <>
           <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>
           <div style={{ width: "600px", height: "400px", margin: "0 auto" }}>
-            <Line data={chartData} options={chartOptions} />
-          </div>
+  <Plot
+    data={[
+      {
+        x: dataPoints.map((point) => point.x),
+        y: dataPoints.map((point) => point.y),
+        type: 'scatter',
+        mode: 'lines+markers',
+        marker: { color: '#1e3a8a' },
+        line: { shape: 'spline' },
+        name: `f(x) = ${equation}`,
+      },
+    ]}
+    layout={{
+      title: {
+        text: 'Graphical Method: f(x) vs x',
+        font: { color: '#1e3a8a', size: 20 },
+      },
+      xaxis: {
+        title: { text: 'x', font: { color: '#1e3a8a' } },
+        tickfont: { color: '#1e3a8a' },
+      },
+      yaxis: {
+        title: { text: 'f(x)', font: { color: '#1e3a8a' } },
+        tickfont: { color: '#1e3a8a' },
+      },
+      paper_bgcolor: '#f9fafb',
+      plot_bgcolor: '#ffffff',
+      font: { color: '#1e293b' },
+      autosize: true,
+      height: 400,
+      width: 600,
+    }}
+  />
+</div>
+
 
           <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Results</h2>
           <table border="1" cellPadding="8" style={{ width: "100%", marginTop: "1rem", backgroundColor: "white" }}>

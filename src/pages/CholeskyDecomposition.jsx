@@ -1,29 +1,8 @@
 import React, { useState } from "react";
-import { Line } from "react-chartjs-2";
-import Header1 from "./components/Header1";
+import Plot from 'react-plotly.js';
+import Header1 from "../components/Header1";
 
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
-function LUDecomposition() {
+function CholeskyDecomposition() {
   const [matrixSize, setMatrixSize] = useState(2);
   const [matrixA, setMatrixA] = useState(Array(2).fill().map(() => Array(2).fill(0)));
   const [vectorB, setVectorB] = useState(Array(2).fill(0));
@@ -49,65 +28,63 @@ function LUDecomposition() {
     setVectorB(updated);
   };
 
-  const calculateLU = () => {
+  const calculateCholesky = () => {
     try {
       const n = matrixSize;
       const A = matrixA.map(row => [...row]);
       const B = [...vectorB];
 
-      // Initialize L and U
-      const L = Array(n).fill().map(() => Array(n).fill(0));
-      const U = Array(n).fill().map(() => Array(n).fill(0));
-
-      // LU Decomposition (Doolittle method)
+  
       for (let i = 0; i < n; i++) {
-        // Upper triangular (U)
-        for (let k = i; k < n; k++) {
-          let sum = 0;
-          for (let j = 0; j < i; j++) {
-            sum += L[i][j] * U[j][k];
-          }
-          U[i][k] = A[i][k] - sum;
-        }
-
-        // Lower triangular (L)
-        for (let k = i; k < n; k++) {
-          if (i === k) {
-            L[i][i] = 1; // Diagonal as 1
-          } else {
-            let sum = 0;
-            for (let j = 0; j < i; j++) {
-              sum += L[k][j] * U[j][i];
-            }
-            if (U[i][i] === 0) {
-              throw new Error("Zero pivot encountered in LU decomposition.");
-            }
-            L[k][i] = (A[k][i] - sum) / U[i][i];
+        for (let j = 0; j < n; j++) {
+          if (A[i][j] !== A[j][i]) {
+            alert("Matrix A must be symmetric for Cholesky decomposition.");
+            return;
           }
         }
       }
 
-      // Solve Ly = B (forward substitution)
+      const L = Array(n).fill().map(() => Array(n).fill(0));
+
+      
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j <= i; j++) {
+          let sum = 0;
+
+          for (let k = 0; k < j; k++) {
+            sum += L[i][k] * L[j][k];
+          }
+
+          if (i === j) {
+            const val = A[i][i] - sum;
+            if (val <= 0) {
+              alert("Matrix is not positive definite.");
+              return;
+            }
+            L[i][j] = Math.sqrt(val);
+          } else {
+            L[i][j] = (1.0 / L[j][j]) * (A[i][j] - sum);
+          }
+        }
+      }
+
       const y = Array(n).fill(0);
       for (let i = 0; i < n; i++) {
         let sum = 0;
         for (let j = 0; j < i; j++) {
           sum += L[i][j] * y[j];
         }
-        y[i] = (B[i] - sum) / L[i][i]; // L[i][i] = 1 here
+        y[i] = (B[i] - sum) / L[i][i];
       }
 
-      // Solve Ux = y (backward substitution)
+      
       const x = Array(n).fill(0);
       for (let i = n - 1; i >= 0; i--) {
         let sum = 0;
         for (let j = i + 1; j < n; j++) {
-          sum += U[i][j] * x[j];
+          sum += L[j][i] * x[j]; 
         }
-        if (U[i][i] === 0) {
-          throw new Error("Zero pivot in U; no unique solution.");
-        }
-        x[i] = (y[i] - sum) / U[i][i];
+        x[i] = (y[i] - sum) / L[i][i];
       }
 
       setSolution(x.map(val => val.toFixed(6)));
@@ -116,7 +93,7 @@ function LUDecomposition() {
     }
   };
 
-  // สำหรับกราฟ
+ 
   const inputWidth = 60;
   const inputMargin = 8;
   const totalWidth = (inputWidth + inputMargin) * matrixSize;
@@ -142,7 +119,7 @@ function LUDecomposition() {
       legend: { position: "top", labels: { color: "#1e293b" } },
       title: {
         display: true,
-        text: "LU Decomposition: Solution Values",
+        text: "Cholesky Decomposition: Solution Values",
         color: "#1e3a8a",
       },
     },
@@ -165,29 +142,28 @@ function LUDecomposition() {
           boxSizing: "border-box",
         }}
       >
-        <h1 style={{ color: "#1e3a8a", textAlign: "center" }}>LU Decomposition Method</h1>
+        <h1 style={{ color: "#1e3a8a", textAlign: "center" }}>Cholesky Decomposition Method</h1>
 
-        {/* Matrix Size */}
+
         <div style={{ marginBottom: "1rem", textAlign: "center" }}>
           <label>Matrix Size: </label>
           <div className="s">
-            <select
-              value={matrixSize}
-              onChange={handleSizeChange}
-              style={{ marginLeft: 8, padding: "0.3rem" }}
-            >
-              {[2, 3, 4, 5, 6].map((n) => (
-                <option key={n} value={n}>
-                  {n} x {n}
-                </option>
-              ))}
-            </select>
+          <select
+            value={matrixSize}
+            onChange={handleSizeChange}
+            style={{ marginLeft: 8, padding: "0.3rem" }}
+          >
+            {[2, 3, 4, 5, 6].map((n) => (
+              <option key={n} value={n}>
+                {n} x {n}
+              </option>
+            ))}
+          </select>
           </div>
         </div>
 
-        {/* Matrix A */}
         <div style={{ marginBottom: "1rem" }}>
-          <h3 style={{ textAlign: "center" }}>Matrix A:</h3>
+          <h3 style={{ textAlign: "center" }}>Matrix A (Symmetric, Positive Definite):</h3>
           <div
             style={{
               width: totalWidth,
@@ -224,7 +200,7 @@ function LUDecomposition() {
           </div>
         </div>
 
-        {/* Vector B */}
+ 
         <div style={{ marginBottom: "1rem" }}>
           <h3 style={{ textAlign: "center" }}>Vector B:</h3>
           <div
@@ -252,10 +228,10 @@ function LUDecomposition() {
           </div>
         </div>
 
-        {/* Calculate Button */}
+      
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
           <button
-            onClick={calculateLU}
+            onClick={calculateCholesky}
             style={{
               padding: "0.5rem 1rem",
               backgroundColor: "#1e3a8a",
@@ -269,17 +245,36 @@ function LUDecomposition() {
           </button>
         </div>
 
-        {/* Graph */}
+        
         {solution.length > 0 && (
           <>
             <h2 style={{ color: "#1e3a8a", textAlign: "center" }}>Graph</h2>
             <div style={{ width: 600, height: 400, margin: "0 auto" }}>
-              <Line data={chartData} options={chartOptions} />
-            </div>
+  <Plot
+    data={[
+      {
+        x: solution.map((_, i) => `x${i + 1}`),
+        y: solution.map(Number),
+        type: 'bar',
+        marker: { color: '#1e3a8a' },
+      },
+    ]}
+    layout={{
+      title: { text: "Cholesky Decomposition: Solution Values", font: { color: '#1e3a8a' } },
+      xaxis: { title: { text: 'Variable', font: { color: '#1e3a8a' } } },
+      yaxis: { title: { text: 'Value', font: { color: '#1e3a8a' } } },
+      plot_bgcolor: '#f9fafb',
+      paper_bgcolor: '#f9fafb',
+      font: { color: '#1e293b' },
+      height: 400,
+      width: 600,
+    }}
+  />
+</div>
 
-            {/* Solution Table */}
+           
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a", textAlign: "center" }}>
-              Solution
+              Results
             </h2>
             <table
               border="1"
@@ -314,4 +309,4 @@ function LUDecomposition() {
   );
 }
 
-export default LUDecomposition;
+export default CholeskyDecomposition;

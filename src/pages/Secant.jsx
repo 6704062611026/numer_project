@@ -1,29 +1,9 @@
 import React, { useState } from "react";
 import { evaluate } from "mathjs";
-import { Line } from "react-chartjs-2";
-import './App.css';
-import Header from './components/Header';
+import Plot from 'react-plotly.js';
+import '../App.css';
+import Header from '../components/Header';
 
-import {
-  Chart as ChartJS,
-  LineElement,
-  PointElement,
-  LinearScale,
-  Title,
-  CategoryScale,
-  Tooltip,
-  Legend,
-} from "chart.js";
-
-ChartJS.register(
-  LineElement,
-  PointElement,
-  LinearScale,
-  Title,
-  CategoryScale,
-  Tooltip,
-  Legend
-);
 
 function SecantMethod() {
   const [equation, setEquation] = useState("x^3 - x - 2");
@@ -168,42 +148,72 @@ function SecantMethod() {
           Calculate
         </button>
 
-        {iterations.length > 0 && (
-          <>
-            <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>
-            <div style={{ width: "600px", height: "400px", margin: "0 auto" }}>
-              <Line data={chartData} options={chartOptions} />
-            </div>
+  {iterations.length > 0 && (
+  <>
+    <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>
+    <div style={{ width: "600px", height: "400px", margin: "0 auto" }}>
+      <Plot
+        data={[
+          {
+            x: dataPoints.map(p => p.x),
+            y: dataPoints.map(p => p.y),
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: 'x (Approximate Root)',
+            line: { color: '#1e3a8a', width: 2 },
+          },
+        ]}
+        layout={{
+          title: {
+            text: 'Secant Method: Convergence',
+            font: { color: '#1e3a8a' },
+          },
+          xaxis: {
+            title: { text: 'Iteration', font: { color: '#1e3a8a' } },
+            dtick: 1,
+          },
+          yaxis: {
+            title: { text: 'x (Root)', font: { color: '#1e3a8a' } },
+          },
+          plot_bgcolor: '#f9fafb',
+          paper_bgcolor: '#f9fafb',
+          font: { color: '#1e293b' },
+          height: 400,
+          width: 600,
+        }}
+      />
+    </div>
 
-            <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Iterations</h2>
-            <table border="1" cellPadding="8" style={{ width: "100%", marginTop: "1rem", backgroundColor: "white" }}>
-              <thead style={{ backgroundColor: "#e0e7ff" }}>
-                <tr>
-                  <th>Iteration</th>
-                  <th>x_prev</th>
-                  <th>x_curr</th>
-                  <th>f(x_prev)</th>
-                  <th>f(x_curr)</th>
-                  <th>x_next</th>
-                  <th>Error</th>
-                </tr>
-              </thead>
-              <tbody>
-                {iterations.map((row, index) => (
-                  <tr key={index}>
-                    <td>{row.iteration}</td>
-                    <td>{row.x_prev}</td>
-                    <td>{row.x_curr}</td>
-                    <td>{row.f_prev}</td>
-                    <td>{row.f_curr}</td>
-                    <td>{row.x_next}</td>
-                    <td>{row.error}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
+    <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Results</h2>
+    <table border="1" cellPadding="8" style={{ width: "100%", marginTop: "1rem", backgroundColor: "white" }}>
+      <thead style={{ backgroundColor: "#e0e7ff" }}>
+        <tr>
+          <th>Iteration</th>
+          <th>x_prev</th>
+          <th>x_curr</th>
+          <th>f(x_prev)</th>
+          <th>f(x_curr)</th>
+          <th>x_next</th>
+          <th>Error</th>
+        </tr>
+      </thead>
+      <tbody>
+        {iterations.map((row, index) => (
+          <tr key={index}>
+            <td>{row.iteration}</td>
+            <td>{row.x_prev}</td>
+            <td>{row.x_curr}</td>
+            <td>{row.f_prev}</td>
+            <td>{row.f_curr}</td>
+            <td>{row.x_next}</td>
+            <td>{row.error}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </>
+)}
+
       </div>
     </>
   );
