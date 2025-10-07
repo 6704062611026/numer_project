@@ -9,8 +9,8 @@ function Home() {
     { name: "Root of Equation", path: "/graphical" },
     { name: "Linear Algebra Equation", path: "/cramers" },
     { name: "Interpolation", path: "/newtonI" },
-    { name: "Extrapolation", path: "/extrapolation" },
-    { name: "Integration", path: "/integration" },
+    { name: "Extrapolation", path: "/simple" },
+    { name: "Integration", path: "/trapezoidal" },
     { name: "Differentiation", path: "/differentiation" },
   ];
 

@@ -20,6 +20,10 @@ import GaussSeidel from "./pages/GaussSeidel";
 import ConjugateGradient from "./pages/ConjugateGradient";
 import NewtonInterpolation from "./pages/NewtonInterpolation";
 import LagrangeInterpolation from "./pages/LagrangeInterpolation";
+import SplineInterpolation from "./pages/SplineInterpolation";
+import SimpleRegression from "./pages/SimpleRegression";
+import MultipleRegression from "./pages/MultipleRegression";
+import TrapezoidalIntegration from "./pages/TrapezoidalIntegration";
 
 function App() {
   return (
@@ -44,6 +48,10 @@ function App() {
         <Route path="/conjugate" element={<ConjugateGradient/>}/>
         <Route path="/newtonI" element={<NewtonInterpolation/>}/>
         <Route path="/lagrange" element={<LagrangeInterpolation/>}/>
+        <Route path="/splineI" element={<SplineInterpolation/>}/>
+        <Route path="/simple" element={<SimpleRegression/>}/>
+        <Route path="/multi" element={<MultipleRegression/>}/>
+        <Route path="/trapezoidal" element={<TrapezoidalIntegration/>}/>
       </Routes>
     </Router>
   );

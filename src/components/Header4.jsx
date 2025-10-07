@@ -1,16 +1,15 @@
-import "./Header2.css";
+import "./Header4.css";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 
-function Header2() {
+function Header4() {
   const navigate = useNavigate();
   const location = useLocation();
 
   
   const options = [
-    { label: "Newton's Divided Differences Interpolation Method", path: "/newtonI" },
-    { label: "Lagrange Interpolation Method", path: "/lagrange" },
-    { label: "Spline Interpolation Method", path: "/splineI" },
+    { label: "TrapezoidalIntegration Method", path: "/trapezoidal" },
+    { label: "MultipleRegression Method", path: "/multi" },
   ];
 
   const [selectedPath, setSelectedPath] = useState("");
@@ -59,13 +58,12 @@ function Header2() {
       </nav>
       <div className="s">
         <select onChange={handleSelect} value={selectedPath}>
-          <option value="/newtonI">Newton's Divided Differences Interpolation Method</option>
-          <option value="/lagrange">Lagrange Interpolation Method</option>
-          <option value="/splineI">Spline Interpolation Method</option>
+          <option value="/trapezoidal">TrapezoidalIntegration Method Method</option>
+          <option value="/multi">MultipleRegression Method</option>
         </select>
       </div>
     </>
   );
 }
 
-export default Header2;
+export default Header4;
