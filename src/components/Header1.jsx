@@ -14,6 +14,9 @@ function Header1() {
     { label: "Matrix Inversion method", path: "/matrix-inversion" },
     { label: "LU Decomposition method", path: "/lu-decomposition" },
     { label: "Cholesky Decomposition method", path: "/cholesky" },
+    { label: "Jacobi iteration method", path: "/jacobi"},
+    { label: "Gauss Seidel Iteration method", path: "/gaussseidel"},
+    { label: "ConjugateGradient method", path: "/conjugate"}
   ];
 
   const [selectedPath, setSelectedPath] = useState("");
@@ -68,6 +71,9 @@ function Header1() {
           <option value="/matrixI">Matrix Inversion Method</option>
           <option value="/LU">LU Decomposition Method</option>
           <option value="/cholesky">Cholesky Decomposition Method</option>
+          <option value="/jacobi">Jacobi iteration method</option>
+          <option value="/gaussseidel">Gauss Seidel Iteration method</option>
+          <option value="/conjugate">ConjugateGradient method</option>
         </select>
       </div>
     </>

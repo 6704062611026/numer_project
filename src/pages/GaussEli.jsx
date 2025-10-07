@@ -36,7 +36,7 @@ function GaussEli() {
     const B = [...vectorB];
     const n = size;
 
-    // Forward Elimination
+    
     for (let i = 0; i < n; i++) {
      
       if (A[i][i] === 0) {

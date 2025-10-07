@@ -8,7 +8,7 @@ function Home() {
   const categories = [
     { name: "Root of Equation", path: "/graphical" },
     { name: "Linear Algebra Equation", path: "/cramers" },
-    { name: "Interpolation", path: "/interpolation" },
+    { name: "Interpolation", path: "/newtonI" },
     { name: "Extrapolation", path: "/extrapolation" },
     { name: "Integration", path: "/integration" },
     { name: "Differentiation", path: "/differentiation" },

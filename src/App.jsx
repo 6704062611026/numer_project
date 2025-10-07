@@ -15,7 +15,11 @@ import GaussJor from "./pages/GaussJor";
 import MatrixInversion from "./pages/MatrixInversion";
 import LUDecomposition from "./pages/LUDecomposition";
 import CholeskyDecomposition from "./pages/CholeskyDecomposition";
-
+import Jacobi from "./pages/Jacobi";
+import GaussSeidel from "./pages/GaussSeidel";
+import ConjugateGradient from "./pages/ConjugateGradient";
+import NewtonInterpolation from "./pages/NewtonInterpolation";
+import LagrangeInterpolation from "./pages/LagrangeInterpolation";
 
 function App() {
   return (
@@ -35,7 +39,11 @@ function App() {
         <Route path="/matrixI" element={<MatrixInversion />} />
         <Route path="/LU" element={<LUDecomposition />} />
         <Route path="/cholesky" element={<CholeskyDecomposition />} />
-
+        <Route path="/jacobi" element={<Jacobi/>}/>
+        <Route path="/gaussseidel" element={<GaussSeidel/>}/>
+        <Route path="/conjugate" element={<ConjugateGradient/>}/>
+        <Route path="/newtonI" element={<NewtonInterpolation/>}/>
+        <Route path="/lagrange" element={<LagrangeInterpolation/>}/>
       </Routes>
     </Router>
   );
