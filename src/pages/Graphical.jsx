@@ -9,9 +9,10 @@ function Graphical() {
   const [equation, setEquation] = useState("x^3 - x - 2");
   const [xStart, setXStart] = useState(-5);
   const [xEnd, setXEnd] = useState(5);
+  const [tolerance, setTolerance] = useState("0.000001");
   const [dataPoints, setDataPoints] = useState([]);
+  const [estimatedRoot, setEstimatedRoot] = useState(null);
 
-  // แปลง mathjs -> LaTeX
   const mathjsToLatex = (expr) => {
     try {
       return expr
@@ -26,9 +27,24 @@ function Graphical() {
   };
 
   const calculateGraphical = () => {
-    const graphical = new GraphicalMethod(equation, xStart, xEnd);
-    const points = graphical.generatePoints();
-    setDataPoints(points);
+    const tol = parseFloat(tolerance) || 0.000001;
+    const graphical = new GraphicalMethod(equation, xStart, xEnd, 0.1, tol);
+
+    const rawPoints = graphical.generatePoints();
+
+    // ใช้ zoom-in หาค่า root ที่ f(x) ใกล้ 0 ที่สุด
+    const estimated = graphical.findRootByZoomIn();
+
+    if (Math.abs(estimated.y) > tol) {
+      alert(`ไม่พบค่า f(x) ที่เข้าใกล้ 0 ภายใน tolerance ที่กำหนด`);
+      setDataPoints([]);
+      setEstimatedRoot(null);
+      return;
+    }
+
+    const withError = graphical.appendErrorFromEstimatedRoot(rawPoints, estimated.x);
+    setEstimatedRoot(estimated.x);
+    setDataPoints(withError);
   };
 
   return (
@@ -50,6 +66,7 @@ function Graphical() {
           <BlockMath math={`f(x) = ${mathjsToLatex(equation)}`} />
         </div>
 
+        {/* Input Section */}
         <div style={{ marginBottom: "1rem" }}>
           <label>Equation:</label>
           <input
@@ -65,7 +82,7 @@ function Graphical() {
             type="number"
             value={xStart}
             onChange={(e) => setXStart(e.target.value)}
-            style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc", marginBottom: "0.5rem" }}
+            style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc" }}
           />
         </div>
 
@@ -75,6 +92,17 @@ function Graphical() {
             type="number"
             value={xEnd}
             onChange={(e) => setXEnd(e.target.value)}
+            style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc" }}
+          />
+        </div>
+
+        <div style={{ marginBottom: "1rem" }}>
+          <label>Error Tolerance (e.g. 0.000001):</label>
+          <input
+            type="number"
+            value={tolerance}
+            onChange={(e) => setTolerance(e.target.value)}
+            step="any"
             style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc" }}
           />
         </div>
@@ -124,11 +152,16 @@ function Graphical() {
             </div>
 
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Results</h2>
+            <p>
+              Estimated Root: <strong>{estimatedRoot}</strong>
+            </p>
+
             <table border="1" cellPadding="8" style={{ marginTop: "1rem", width: "100%" }}>
               <thead style={{ backgroundColor: "#e0e7ff" }}>
                 <tr>
                   <th>X</th>
                   <th>f(X)</th>
+                  <th>Error</th>
                 </tr>
               </thead>
               <tbody>
@@ -136,6 +169,7 @@ function Graphical() {
                   <tr key={index}>
                     <td>{point.x}</td>
                     <td>{point.y}</td>
+                    <td>{point.error !== null ? point.error : "-"}</td>
                   </tr>
                 ))}
               </tbody>

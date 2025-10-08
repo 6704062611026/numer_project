@@ -1,12 +1,16 @@
 import React, { useState } from "react";
 import Plot from "react-plotly.js";
 import Header2 from "../components/Header2";
+import NewtonInterpolationMethod from "../utils/NewtonInterpolationMethod";
 
 function NewtonInterpolation() {
   const [points, setPoints] = useState([{ x: 0, y: 0 }]);
+  const [interpolator, setInterpolator] = useState(null);
   const [dividedDiffTable, setDividedDiffTable] = useState([]);
   const [xs, setXs] = useState([]);
   const [ys, setYs] = useState([]);
+  const [plotXs, setPlotXs] = useState([]);
+  const [plotYs, setPlotYs] = useState([]);
 
   const addPoint = () => {
     setPoints([...points, { x: 0, y: 0 }]);
@@ -19,48 +23,17 @@ function NewtonInterpolation() {
   };
 
   const calculate = () => {
-    const n = points.length;
-    const x = points.map((p) => p.x);
-    const y = points.map((p) => p.y);
-    const table = Array.from({ length: n }, () => Array(n).fill(0));
+    const method = new NewtonInterpolationMethod(points);
+    const table = method.getTable();
+    const { plotXs, plotYs } = method.generatePlotPoints();
 
-    for (let i = 0; i < n; i++) {
-      table[i][0] = y[i];
-    }
-
-    for (let j = 1; j < n; j++) {
-      for (let i = 0; i < n - j; i++) {
-        table[i][j] = (table[i + 1][j - 1] - table[i][j - 1]) / (x[i + j] - x[i]);
-      }
-    }
-
-    setXs(x);
-    setYs(y);
+    setInterpolator(method);
     setDividedDiffTable(table);
+    setXs(method.getXs());
+    setYs(method.getYs());
+    setPlotXs(plotXs);
+    setPlotYs(plotYs);
   };
-
-  const evaluatePoly = (xx) => {
-    if (!dividedDiffTable[0]) return 0;
-    let val = dividedDiffTable[0][0];
-    let term = 1;
-    for (let i = 1; i < points.length; i++) {
-      term *= xx - xs[i - 1];
-      val += dividedDiffTable[0][i] * term;
-    }
-    return val;
-  };
-
-  const minX = Math.min(...points.map((p) => p.x));
-  const maxX = Math.max(...points.map((p) => p.x));
-  let plotXs = [];
-  let plotYs = [];
-
-  if (dividedDiffTable.length > 0 && dividedDiffTable[0]) {
-    plotXs = Array.from({ length: 100 }, (_, i) =>
-      minX + ((maxX - minX) * i) / 99
-    );
-    plotYs = plotXs.map(evaluatePoly);
-  }
 
   return (
     <>
@@ -68,6 +41,7 @@ function NewtonInterpolation() {
       <div className="App" style={{ padding: "2rem" }}>
         <h1 style={{ color: "#1e3a8a", textAlign: "center" }}>Newton Divided-Differences Interpolation</h1>
 
+        {/* Input Points */}
         {points.map((point, index) => (
           <div key={index} style={{ marginBottom: "1rem", textAlign: "center" }}>
             <label style={{ marginRight: 8 }}>x{index + 1}:</label>
@@ -101,6 +75,7 @@ function NewtonInterpolation() {
           </button>
         </div>
 
+        {/* Divided Difference Table */}
         {dividedDiffTable.length > 0 && (
           <>
             <h2 style={{ color: "#1e3a8a", textAlign: "center" }}>Divided Difference Table</h2>
@@ -135,6 +110,7 @@ function NewtonInterpolation() {
               </tbody>
             </table>
 
+            {/* Graph */}
             <h2 style={{ color: "#1e3a8a", textAlign: "center", marginTop: "2rem" }}>Graph</h2>
             <div style={{ width: 600, height: 400, margin: "0 auto" }}>
               <Plot
