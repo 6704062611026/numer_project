@@ -1,273 +1,170 @@
 import React, { useState } from "react";
-import { det } from "mathjs";
-import Plot from 'react-plotly.js';
+import "katex/dist/katex.min.css";
+import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
+import solveCramer from "../utils/CramerRuleMethod";
 
-function CramersRule() {
-  const [matrixSize, setMatrixSize] = useState(2);
-  const [matrixA, setMatrixA] = useState(Array(2).fill().map(() => Array(2).fill(0)));
-  const [vectorB, setVectorB] = useState(Array(2).fill(0));
-  const [solution, setSolution] = useState([]);
+function CramerRule() {
+  const [inputSize, setInputSize] = useState("3"); // รับเป็น string ก่อน
+  const [matrixA, setMatrixA] = useState([]);
+  const [matrixB, setMatrixB] = useState([]);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
 
-  const handleSizeChange = (e) => {
-    const size = parseInt(e.target.value);
-    setMatrixSize(size);
-    setMatrixA(Array(size).fill().map(() => Array(size).fill(0)));
-    setVectorB(Array(size).fill(0));
-    setSolution([]);
+  function createEmptyMatrix(n) {
+    return Array.from({ length: n }, () => Array(n).fill(0));
+  }
+
+  const handleChangeA = (row, col, value) => {
+    const newMatrix = [...matrixA];
+    newMatrix[row][col] = parseFloat(value);
+    setMatrixA(newMatrix);
   };
 
-  const handleMatrixChange = (row, col, value) => {
-    const updated = [...matrixA];
-    updated[row][col] = value === "" ? "" : parseFloat(value);
-    setMatrixA(updated);
+  const handleChangeB = (row, value) => {
+    const newMatrix = [...matrixB];
+    newMatrix[row] = parseFloat(value);
+    setMatrixB(newMatrix);
   };
 
-  const handleVectorChange = (i, value) => {
-    const updated = [...vectorB];
-    updated[i] = value === "" ? "" : parseFloat(value);
-    setVectorB(updated);
-  };
+  const handleSolve = () => {
+    const size = parseInt(inputSize);
 
-  const calculate = () => {
-    try {
-      const detA = det(matrixA);
-      if (detA === 0) {
-        alert("Determinant is zero. No unique solution.");
-        return;
-      }
-
-      const results = [];
-      for (let i = 0; i < matrixSize; i++) {
-        const modified = matrixA.map((row, r) =>
-          row.map((val, c) => (c === i ? vectorB[r] : val))
-        );
-        results.push((det(modified) / detA).toFixed(6));
-      }
-      setSolution(results);
-    } catch {
-      alert("Invalid input.");
+    if (isNaN(size) || size < 2) {
+      setError("Matrix size must be a number greater than or equal to 2");
+      setResult(null);
+      return;
     }
-  };
 
-  
-  const inputWidth = 60;
-  const inputMargin = 8;
-  const totalWidth = (inputWidth + inputMargin) * matrixSize;
+    setError("");
 
-  const chartData = {
-    labels: solution.map((_, i) => `x${i + 1}`),
-    datasets: [
-      {
-        label: "Variable Values",
-        data: solution.map(Number),
-        borderColor: "#1e3a8a",
-        backgroundColor: "#93c5fd",
-        tension: 0.3,
-        fill: false,
-      },
-    ],
-  };
+    // ถ้ายังไม่มี matrix สร้างใหม่
+    if (matrixA.length !== size) {
+      setMatrixA(createEmptyMatrix(size));
+      setMatrixB(Array(size).fill(0));
+      setResult(null);
+      return; // ยังไม่คิดตอนนี้ ให้ user ใส่ค่าก่อน
+    }
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "top", labels: { color: "#1e293b" } },
-      title: {
-        display: true,
-        text: "Cramer's Rule: Solution Values",
-        color: "#1e3a8a",
-      },
-    },
-    scales: {
-      y: {
-        title: { display: true, text: "Value", color: "#1e3a8a" },
-      },
-      x: {
-        title: { display: true, text: "Variable", color: "#1e3a8a" },
-      },
-    },
+    const res = solveCramer(matrixA, matrixB);
+    setResult(res);
   };
 
   return (
     <>
       <Header1 />
-      <div
-        className="App"
-        style={{
-          padding: "2rem",
-          backgroundColor: "#f9fafb",
-          color: "#1e293b",
-          minHeight: "100vh",
-          boxSizing: "border-box",
-        }}
-      >
-        <h1 style={{ color: "#1e3a8a", textAlign: "center" }}>Cramer's Rule</h1>
+      <div style={{ padding: "1rem", maxWidth: 1000, margin: "auto", textAlign: "center" }}>
+        <h1 style={{ color: "#1e3a8a" }}>Cramer's Rule</h1>
 
-        {/* Matrix Size */}
-        <div style={{ marginBottom: "1rem", textAlign: "center" }}>
-          <label>Matrix Size: </label>
-          <div className="s">
-          <select
-            value={matrixSize}
-            onChange={handleSizeChange}
-            style={{ marginLeft: 8, padding: "0.3rem" }}
-          >
-            {[2, 3, 4, 5, 6].map((n) => (
-              <option key={n} value={n}>
-                {n} x {n}
-              </option>
-            ))}
-          </select>
-          </div>
+        <div style={{ marginBottom: "1rem" }}>
+          <label><strong>Matrix Size (n × n):</strong></label>
+          <input
+            type="number"
+            value={inputSize}
+            onChange={(e) => setInputSize(e.target.value)}
+            min={2}
+            style={{ width: "60px", marginLeft: "10px" }}
+          />
         </div>
 
-        
-        <div style={{ marginBottom: "1rem" }}>
-          <h3 style={{ textAlign: "center" }}>Matrix A:</h3>
-          <div
-            style={{
-              width: totalWidth,
-              margin: "0 auto",
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-            }}
-          >
-            {matrixA.map((row, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  gap: "8px",
-                }}
-              >
-                {row.map((val, j) => (
+        {matrixA.length > 0 && (
+          <>
+            <h3>Matrix A ({matrixA.length}×{matrixA.length}):</h3>
+            <div style={{ display: "inline-block", textAlign: "center" }}>
+              {matrixA.map((row, rowIndex) => (
+                <div key={rowIndex}>
+                  {row.map((value, colIndex) => (
+                    <input
+                      key={colIndex}
+                      type="number"
+                      value={value}
+                      onChange={(e) => handleChangeA(rowIndex, colIndex, e.target.value)}
+                      style={{
+                        width: "60px",
+                        margin: "4px",
+                        textAlign: "center",
+                      }}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            <h3>Matrix B ({matrixB.length}×1):</h3>
+            <div style={{ display: "inline-block", textAlign: "center" }}>
+              {matrixB.map((value, index) => (
+                <div key={index}>
                   <input
-                    key={`${i}-${j}`}
                     type="number"
-                    value={val}
-                    onChange={(e) => handleMatrixChange(i, j, e.target.value)}
+                    value={value}
+                    onChange={(e) => handleChangeB(index, e.target.value)}
                     style={{
-                      width: inputWidth,
-                      height: 40,
+                      width: "60px",
+                      margin: "4px",
                       textAlign: "center",
                     }}
                   />
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
-        
-        <div style={{ marginBottom: "1rem" }}>
-          <h3 style={{ textAlign: "center" }}>Vector B:</h3>
-          <div
-            style={{
-              width: totalWidth,
-              margin: "0 auto",
-              display: "flex",
-              justifyContent: "center",
-              gap: "8px",
-            }}
-          >
-            {vectorB.map((val, i) => (
-              <input
-                key={i}
-                type="number"
-                value={val}
-                onChange={(e) => handleVectorChange(i, e.target.value)}
-                style={{
-                  width: inputWidth,
-                  height: 40,
-                  textAlign: "center",
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-       
-        <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+        <div>
           <button
-            onClick={calculate}
+            onClick={handleSolve}
             style={{
               padding: "0.5rem 1rem",
               backgroundColor: "#1e3a8a",
               color: "white",
               border: "none",
-              borderRadius: 4,
+              borderRadius: "4px",
               cursor: "pointer",
+              marginTop: "1rem",
             }}
           >
-            Calculate
+            {matrixA.length === parseInt(inputSize) ? "Solve" : "Create Matrix"}
           </button>
         </div>
 
-        {solution.length > 0 && (
-          <>
-            <h2 style={{ color: "#1e3a8a", textAlign: "center" }}>Graph</h2>
-            <div style={{ width: 600, height: 400, margin: "0 auto" }}>
-  <Plot
-    data={[
-      {
-        x: solution.map((_, i) => `x${i + 1}`),
-        y: solution.map(Number),
-        type: 'bar',
-        marker: { color: '#1e3a8a' },
-      },
-    ]}
-    layout={{
-      title: { text: "Cramer's Rule: Solution Values", font: { color: '#1e3a8a' } },
-      xaxis: { title: { text: 'Variable', font: { color: '#1e3a8a' } } },
-      yaxis: { title: { text: 'Value', font: { color: '#1e3a8a' } } },
-      plot_bgcolor: '#f9fafb',
-      paper_bgcolor: '#f9fafb',
-      font: { color: '#1e293b' },
-      height: 400,
-      width: 600,
-    }}
-  />
-</div>
+        {/* แสดง Error */}
+        {error && (
+          <div style={{ color: "red", marginTop: "1rem" }}>
+            {error}
+          </div>
+        )}
 
+        {/* แสดงผลลัพธ์ */}
+        {result && !result.error && (
+          <div style={{
+            backgroundColor: "#f0f4ff",
+            padding: "1rem",
+            borderRadius: "8px",
+            border: "1px solid #cbd5e1",
+            marginTop: "2rem",
+            textAlign: "left",
+          }}>
+            <BlockMath math={`\\text{From Cramer's Rule:}\\quad x_i = \\frac{\\det(A_i)}{\\det(A)}`} />
+            <BlockMath math={`\\det(A) = ${result.detA}`} />
+            {result.steps.map((step, index) => (
+              <div key={index}>
+                <BlockMath math={`x_${index + 1} = \\frac{\\det(A_${index + 1})}{\\det(A)} = \\frac{${step.detAi}}{${result.detA}} = ${step.value}`} />
+              </div>
+            ))}
+            <br />
+            <BlockMath math={`\\therefore\\ (x_1,\\ x_2,\\ ...,\\ x_n) = (${result.steps.map(s => s.value).join(", ")})`} />
+          </div>
+        )}
 
-            <h2 style={{ marginTop: "2rem", color: "#1e3a8a", textAlign: "center" }}>
-              Results
-            </h2>
-            <table
-              border="1"
-              cellPadding="8"
-              style={{
-                width: "100%",
-                marginTop: "1rem",
-                backgroundColor: "white",
-                textAlign: "center",
-                borderCollapse: "collapse",
-              }}
-            >
-              <thead style={{ backgroundColor: "#e0e7ff" }}>
-                <tr>
-                  {solution.map((_, i) => (
-                    <th key={i}>x{i + 1}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  {solution.map((val, i) => (
-                    <td key={i}>{val}</td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </>
+        {/* แสดงกรณี det = 0 */}
+        {result?.error && (
+          <div style={{ color: "red", marginTop: "1rem" }}>
+            {result.error}
+          </div>
         )}
       </div>
     </>
   );
 }
 
-export default CramersRule;
+export default CramerRule;

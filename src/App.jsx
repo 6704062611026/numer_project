@@ -6,7 +6,6 @@ import Graphical from "./pages/Graphical";
 import Bisection from "./pages/Bisection";
 import FalsePosition from "./pages/FalsePosition";
 import OnePoint from "./pages/OnePoint";
-import TaylorSeries from "./pages/TaylorSeries";
 import NewtonRaphson from "./pages/NewtonRaphson";
 import Secant from "./pages/Secant";
 import CramersRule from "./pages/CramersRule";
@@ -34,7 +33,6 @@ function App() {
         <Route path="/bisection" element={<Bisection />} />
         <Route path="/false-position" element={<FalsePosition />} />
         <Route path="/one-point" element={<OnePoint />} />
-        <Route path="/taylor" element={<TaylorSeries />} />
         <Route path="/newton" element={<NewtonRaphson />} />
         <Route path="/secant" element={<Secant />} />
         <Route path="/cramers" element={<CramersRule />} />

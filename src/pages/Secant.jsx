@@ -1,141 +1,100 @@
+// src/pages/Secant.jsx
 import React, { useState } from "react";
-import { evaluate } from "mathjs";
-import Plot from 'react-plotly.js';
-import '../App.css';
-import Header from '../components/Header';
+import "katex/dist/katex.min.css";
+import { BlockMath } from "react-katex";
+import Header from "../components/Header";
+import Plot from "react-plotly.js";
+import SecantMethod from "../utils/SecantMethod";
 
-
-function SecantMethod() {
+function Secant() {
   const [equation, setEquation] = useState("x^3 - x - 2");
   const [x0, setX0] = useState(1);
   const [x1, setX1] = useState(2);
   const [tolerance, setTolerance] = useState(0.000001);
-  const [iterations, setIterations] = useState([]);
-  const [dataPoints, setDataPoints] = useState([]);
+  const [results, setResults] = useState([]);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const mathjsToLatex = (expr) => {
+    try {
+      return expr
+        .replace(/\*/g, " \\cdot ")
+        .replace(/\^([0-9]+)/g, "^{$1}")
+        .replace(/sin/g, "\\sin")
+        .replace(/cos/g, "\\cos")
+        .replace(/tan/g, "\\tan");
+    } catch {
+      return expr;
+    }
+  };
 
   const calculateSecant = () => {
-    const f = equation;
-    const tol = parseFloat(tolerance);
-    const maxIter = 100;
-
-    let x_prev = parseFloat(x0);
-    let x_curr = parseFloat(x1);
-    let x_next;
-    let iter = 0;
-
-    const results = [];
-    const graphPoints = [];
-
-    while (iter < maxIter) {
-      const f_prev = evaluate(f, { x: x_prev });
-      const f_curr = evaluate(f, { x: x_curr });
-
-      if (f_curr - f_prev === 0) {
-        alert("Division by zero in denominator. Method fails.");
-        return;
-      }
-
-      x_next = x_curr - f_curr * (x_curr - x_prev) / (f_curr - f_prev);
-      const error = Math.abs(x_next - x_curr);
-
-      results.push({
-        iteration: iter + 1,
-        x_prev: x_prev.toFixed(6),
-        x_curr: x_curr.toFixed(6),
-        f_prev: f_prev.toFixed(6),
-        f_curr: f_curr.toFixed(6),
-        x_next: x_next.toFixed(6),
-        error: error.toExponential(3),
-      });
-
-      graphPoints.push({ x: iter + 1, y: x_next });
-
-      if (error < tol) break;
-
-      x_prev = x_curr;
-      x_curr = x_next;
-      iter++;
+    try {
+      setErrorMsg("");
+      const method = new SecantMethod(equation, x0, x1, tolerance);
+      const resultData = method.solve();
+      setResults(resultData);
+    } catch (error) {
+      setErrorMsg(error.message);
     }
-
-    setIterations(results);
-    setDataPoints(graphPoints);
-  };
-
-  const chartData = {
-    labels: dataPoints.map((point) => point.x),
-    datasets: [
-      {
-        label: `x (Approximate Root)`,
-        data: dataPoints.map((point) => point.y),
-        borderColor: "#1e3a8a",
-        backgroundColor: "#93c5fd",
-        tension: 0.3,
-        fill: false,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "top", labels: { color: "#1e293b" } },
-      title: {
-        display: true,
-        text: `Secant Method: Convergence`,
-        color: "#1e3a8a",
-      },
-    },
-    scales: {
-      y: { title: { display: true, text: "x (Root)", color: "#1e3a8a" } },
-      x: { title: { display: true, text: "Iteration", color: "#1e3a8a" } },
-    },
   };
 
   return (
     <>
       <Header />
-      <div className="App" style={{ padding: "2rem", backgroundColor: "#f9fafb", color: "#1e293b" }}>
+      <div className="App" style={{ padding: "1rem", maxWidth: 700, margin: "auto" }}>
         <h1 style={{ color: "#1e3a8a" }}>Secant Method</h1>
 
+        {/* แสดงสมการ */}
+        <div style={{
+          marginBottom: "1rem",
+          backgroundColor: "#f0f4ff",
+          padding: "1rem",
+          borderRadius: "8px",
+          border: "1px solid #cbd5e1",
+        }}>
+          <BlockMath math={`f(x) = ${mathjsToLatex(equation)}`} />
+        </div>
+
         <div style={{ marginBottom: "1rem" }}>
-          <label>f(x) = </label>
+          <label>Equation:</label>
           <input
             value={equation}
             onChange={(e) => setEquation(e.target.value)}
-            style={{ marginLeft: "1rem", padding: "0.3rem", width: "300px" }}
+            style={{ width: "100%", padding: "0.5rem", fontSize: "1rem", borderRadius: 4, border: "1px solid #ccc" }}
           />
         </div>
 
         <div style={{ marginBottom: "1rem" }}>
-          <label>Initial x₀:</label>
+          <label>x₀:</label>
           <input
             type="number"
             value={x0}
             onChange={(e) => setX0(e.target.value)}
-            style={{ marginLeft: "1rem", padding: "0.3rem" }}
+            style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc" }}
           />
+        </div>
 
-          <label style={{ marginLeft: "2rem" }}>Initial x₁:</label>
+        <div style={{ marginBottom: "1rem" }}>
+          <label>x₁:</label>
           <input
             type="number"
             value={x1}
             onChange={(e) => setX1(e.target.value)}
-            style={{ marginLeft: "1rem", padding: "0.3rem" }}
+            style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc" }}
           />
+        </div>
 
-          <label style={{ marginLeft: "2rem" }}>Tolerance:</label>
+        <div style={{ marginBottom: "1rem" }}>
+          <label>Tolerance:</label>
           <input
             type="number"
-            step="0.000001"
             value={tolerance}
             onChange={(e) => setTolerance(e.target.value)}
-            style={{ marginLeft: "1rem", padding: "0.3rem" }}
+            style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc" }}
           />
         </div>
 
         <button
-          className="b"
           onClick={calculateSecant}
           style={{
             padding: "0.5rem 1rem",
@@ -143,80 +102,77 @@ function SecantMethod() {
             color: "white",
             border: "none",
             borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "1rem",
           }}
         >
           Calculate
         </button>
 
-  {iterations.length > 0 && (
-  <>
-    <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>
-    <div style={{ width: "600px", height: "400px", margin: "0 auto" }}>
-      <Plot
-        data={[
-          {
-            x: dataPoints.map(p => p.x),
-            y: dataPoints.map(p => p.y),
-            type: 'scatter',
-            mode: 'lines+markers',
-            name: 'x (Approximate Root)',
-            line: { color: '#1e3a8a', width: 2 },
-          },
-        ]}
-        layout={{
-          title: {
-            text: 'Secant Method: Convergence',
-            font: { color: '#1e3a8a' },
-          },
-          xaxis: {
-            title: { text: 'Iteration', font: { color: '#1e3a8a' } },
-            dtick: 1,
-          },
-          yaxis: {
-            title: { text: 'x (Root)', font: { color: '#1e3a8a' } },
-          },
-          plot_bgcolor: '#f9fafb',
-          paper_bgcolor: '#f9fafb',
-          font: { color: '#1e293b' },
-          height: 400,
-          width: 600,
-        }}
-      />
-    </div>
+        {errorMsg && (
+          <div style={{ color: "red", marginTop: "1rem" }}>
+            <strong>Error:</strong> {errorMsg}
+          </div>
+        )}
 
-    <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Results</h2>
-    <table border="1" cellPadding="8" style={{ width: "100%", marginTop: "1rem", backgroundColor: "white" }}>
-      <thead style={{ backgroundColor: "#e0e7ff" }}>
-        <tr>
-          <th>Iteration</th>
-          <th>x_prev</th>
-          <th>x_curr</th>
-          <th>f(x_prev)</th>
-          <th>f(x_curr)</th>
-          <th>x_next</th>
-          <th>Error</th>
-        </tr>
-      </thead>
-      <tbody>
-        {iterations.map((row, index) => (
-          <tr key={index}>
-            <td>{row.iteration}</td>
-            <td>{row.x_prev}</td>
-            <td>{row.x_curr}</td>
-            <td>{row.f_prev}</td>
-            <td>{row.f_curr}</td>
-            <td>{row.x_next}</td>
-            <td>{row.error}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </>
-)}
+        {/* ผลลัพธ์ */}
+        {results.length > 0 && (
+          <>
+            <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>
+            <div style={{ width: "100%", maxWidth: 600, height: 400, margin: "0 auto" }}>
+              <Plot
+                data={[
+                  {
+                    x: results.map((row) => row.iteration),
+                    y: results.map((row) => parseFloat(row.xNew)),
+                    type: "scatter",
+                    mode: "lines+markers",
+                    name: "x (Root)",
+                    marker: { color: "blue" },
+                  },
+                ]}
+                layout={{
+                  title: "Secant Method: x over Iterations",
+                  xaxis: { title: "Iteration" },
+                  yaxis: { title: "x" },
+                  height: 400,
+                  width: 600,
+                }}
+              />
+            </div>
 
+            <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Results</h2>
+            <table border="1" cellPadding="8" style={{ marginTop: "1rem", width: "100%" }}>
+              <thead style={{ backgroundColor: "#e0e7ff" }}>
+                <tr>
+                  <th>Iteration</th>
+                  <th>x₀</th>
+                  <th>x₁</th>
+                  <th>f(x₀)</th>
+                  <th>f(x₁)</th>
+                  <th>x<sub>new</sub></th>
+                  <th>Error</th>
+                </tr>
+              </thead>
+              <tbody>
+                {results.map((row, index) => (
+                  <tr key={index}>
+                    <td>{row.iteration}</td>
+                    <td>{row.xOld}</td>
+                    <td>{row.xCurr}</td>
+                    <td>{row.fxOld}</td>
+                    <td>{row.fxCurr}</td>
+                    <td>{row.xNew}</td>
+                    <td>{row.error}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
       </div>
     </>
   );
 }
 
-export default SecantMethod;
+export default Secant;

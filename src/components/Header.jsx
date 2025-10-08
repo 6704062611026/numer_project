@@ -57,8 +57,7 @@ function Header() {
           <option value="/bisection">Bisection method</option>
           <option value="/false-position">False position method</option>
           <option value="/one-point">One-point Iteration method</option>
-          <option value="/taylor">Taylor method</option>
-          <option value="/newton">Newton method</option>
+          <option value="/newton">Newton-Raphson method</option>
           <option value="/secant">Secant method</option>
         </select>
       </div>
