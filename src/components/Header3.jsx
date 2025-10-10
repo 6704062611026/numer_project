@@ -58,8 +58,8 @@ function Header3() {
       </nav>
       <div className="s">
         <select onChange={handleSelect} value={selectedPath}>
-          <option value="/simple">SimpleRegression Method</option>
-          <option value="/multi">MultipleRegression Method</option>
+          <option value="/simple">Simple Regression</option>
+          <option value="/multi">Multiple Regression</option>
         </select>
       </div>
     </>

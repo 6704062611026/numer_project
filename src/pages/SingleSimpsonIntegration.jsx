@@ -3,31 +3,27 @@ import Plot from "react-plotly.js";
 import { evaluate, parse } from "mathjs";
 import Header4 from "../components/Header4";
 
-function trapezoidalRule(fx, a, b, n) {
-  const h = (b - a) / n;
-  let sum = 0.5 * (evaluate(fx, { x: a }) + evaluate(fx, { x: b }));
+function singleSimpsonRule(fx, a, b) {
+  const fa = evaluate(fx, { x: a });
+  const fb = evaluate(fx, { x: b });
+  const mid = (a + b) / 2;
+  const fmid = evaluate(fx, { x: mid });
 
-  for (let i = 1; i < n; i++) {
-    const x = a + i * h;
-    sum += evaluate(fx, { x });
-  }
-
-  return h * sum;
+  return ((b - a) / 6) * (fa + 4 * fmid + fb);
 }
 
-function TrapezoidalIntegration() {
-  const [fx, setFx] = useState("x^2");
+function SingleSimpsonIntegration() {
+  const [fx, setFx] = useState("x^3");
   const [a, setA] = useState(0);
-  const [b, setB] = useState(1);
-  const [n, setN] = useState(4);
+  const [b, setB] = useState(4);
   const [result, setResult] = useState(null);
 
   const calculate = () => {
     try {
-      const parsed = parse(fx); // check valid expression
-      parsed.evaluate({ x: 1 }); // test evaluation
+      const parsed = parse(fx);
+      parsed.evaluate({ x: 1 });
 
-      const value = trapezoidalRule(fx, parseFloat(a), parseFloat(b), parseInt(n));
+      const value = singleSimpsonRule(fx, parseFloat(a), parseFloat(b));
       setResult(value);
     } catch (error) {
       alert("Invalid function expression!");
@@ -47,28 +43,12 @@ function TrapezoidalIntegration() {
     }
   });
 
-  // Trapezoids
-  const trapezoids = [];
-  const h = (b - a) / n;
-
-  for (let i = 0; i < n; i++) {
-    const x0 = parseFloat(a) + i * h;
-    const x1 = x0 + h;
-    const y0 = evaluate(fx, { x: x0 });
-    const y1 = evaluate(fx, { x: x1 });
-
-    trapezoids.push({
-      x: [x0, x0, x1, x1],
-      y: [0, y0, y1, 0],
-    });
-  }
-
   return (
     <>
       <Header4 />
       <div className="App" style={{ padding: "2rem" }}>
         <h1 style={{ color: "#1e3a8a", textAlign: "center" }}>
-          Trapezoidal Rule Integration
+          Single Simpson's Rule Integration
         </h1>
 
         <div style={{ textAlign: "center", marginBottom: "1rem" }}>
@@ -91,14 +71,7 @@ function TrapezoidalIntegration() {
             type="number"
             value={b}
             onChange={(e) => setB(e.target.value)}
-            style={{ margin: "0 10px" }}
-          />
-          <label>n = </label>
-          <input
-            type="number"
-            value={n}
-            onChange={(e) => setN(e.target.value)}
-            style={{ marginRight: 10, width: 60 }}
+            style={{ marginRight: 10 }}
           />
           <button
             onClick={calculate}
@@ -124,7 +97,7 @@ function TrapezoidalIntegration() {
         {result !== null && (
           <>
             <h2 style={{ color: "#1e3a8a", textAlign: "center", marginTop: "2rem" }}>
-              Graph with Trapezoids
+              Graph of f(x)
             </h2>
             <div style={{ width: 700, height: 500, margin: "0 auto" }}>
               <Plot
@@ -136,20 +109,9 @@ function TrapezoidalIntegration() {
                     name: "f(x)",
                     line: { color: "#1e3a8a" },
                   },
-                  ...trapezoids.map((t, i) => ({
-                    x: [...t.x, t.x[0]],
-                    y: [...t.y, t.y[0]],
-                    fill: "toself",
-                    fillcolor: "rgba(96,165,250,0.4)",
-                    type: "scatter",
-                    mode: "lines",
-                    line: { color: "rgba(96,165,250,0.7)" },
-                    name: i === 0 ? "Trapezoids" : undefined,
-                    showlegend: i === 0,
-                  })),
                 ]}
                 layout={{
-                  title: "Trapezoidal Approximation of ∫f(x)dx",
+                  title: "Function Plot for ∫f(x)dx",
                   xaxis: { title: "x" },
                   yaxis: { title: "f(x)" },
                   plot_bgcolor: "#f9fafb",
@@ -165,4 +127,4 @@ function TrapezoidalIntegration() {
   );
 }
 
-export default TrapezoidalIntegration;
+export default SingleSimpsonIntegration;

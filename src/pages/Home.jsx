@@ -11,12 +11,12 @@ function Home() {
     { name: "Interpolation", path: "/newtonI" },
     { name: "Extrapolation", path: "/simple" },
     { name: "Integration", path: "/trapezoidal" },
-    { name: "Differentiation", path: "/differentiation" },
+    { name: "Differentiation", path: "/numer" },
   ];
 
   return (
     <div className="home-container">
-      <h1 className="home-title">Numerical Method</h1>
+      <h1 className="home-title">Project of Numerical Method</h1>
       <p className="home-subtitle">Select a category to begin</p>
 
       <div className="category-grid">

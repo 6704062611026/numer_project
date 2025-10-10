@@ -9,7 +9,9 @@ function Header4() {
   
   const options = [
     { label: "TrapezoidalIntegration Method", path: "/trapezoidal" },
-    { label: "MultipleRegression Method", path: "/multi" },
+    { label: "CompositeTrapezoidalIntegration Method", path: "/compositetrapezoidal" },
+    { label: "SingleSimpsonIntegration Method", path: "/singlesimpson" },
+    { label: "CompositeSimpsonIntegration Method", path: "/compositesimpson" }
   ];
 
   const [selectedPath, setSelectedPath] = useState("");
@@ -58,8 +60,10 @@ function Header4() {
       </nav>
       <div className="s">
         <select onChange={handleSelect} value={selectedPath}>
-          <option value="/trapezoidal">TrapezoidalIntegration Method Method</option>
-          <option value="/multi">MultipleRegression Method</option>
+          <option value="/trapezoidal">Trapezoidal Rule</option>
+          <option value="/compositetrapezoidal">Composite Trapezoidal Rule</option>
+          <option value="/singlesimpson">Single Simpson's Rule</option>
+          <option value="/compositesimpson">Composite Simpson's Rule</option>
         </select>
       </div>
     </>

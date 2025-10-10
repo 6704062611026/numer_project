@@ -141,6 +141,9 @@ function FalsePosition() {
             </div>
 
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Results</h2>
+            <p style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>
+            <p>Estimated Root: <strong>{results[results.length - 1]?.xM}</strong>
+            </p></p> 
             <table border="1" cellPadding="8" style={{ marginTop: "1rem", width: "100%" }}>
               <thead style={{ backgroundColor: "#e0e7ff" }}>
                 <tr>

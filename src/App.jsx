@@ -22,7 +22,11 @@ import LagrangeInterpolation from "./pages/LagrangeInterpolation";
 import SplineInterpolation from "./pages/SplineInterpolation";
 import SimpleRegression from "./pages/SimpleRegression";
 import MultipleRegression from "./pages/MultipleRegression";
-import TrapezoidalIntegration from "./pages/TrapezoidalIntegration";
+import SimpleTrapezoidalIntegration from "./pages/Simpletrapezoidal";
+import CompositeTrapezoidalIntegration from "./pages/CompositeTrapezoidal";
+import SingleSimpsonIntegration from "./pages/SingleSimpsonIntegration";
+import CompositeSimpsonIntegration from "./pages/CompositeSimson";
+import NumericalDifferentiation from "./pages/NumericalDifferentiation";
 
 function App() {
   return (
@@ -49,7 +53,11 @@ function App() {
         <Route path="/splineI" element={<SplineInterpolation/>}/>
         <Route path="/simple" element={<SimpleRegression/>}/>
         <Route path="/multi" element={<MultipleRegression/>}/>
-        <Route path="/trapezoidal" element={<TrapezoidalIntegration/>}/>
+        <Route path="/trapezoidal" element={<SimpleTrapezoidalIntegration/>}/>
+        <Route path="/compositetrapezoidal" element={<CompositeTrapezoidalIntegration/>}/>
+        <Route path="/singlesimpson" element={<SingleSimpsonIntegration/>}/>
+        <Route path="/compositesimpson" element={<CompositeSimpsonIntegration/>}/>
+        <Route path="/numer" element={<NumericalDifferentiation/>}/>
       </Routes>
     </Router>
   );

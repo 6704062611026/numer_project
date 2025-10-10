@@ -15,8 +15,8 @@ function Header1() {
     { label: "LU Decomposition method", path: "/lu-decomposition" },
     { label: "Cholesky Decomposition method", path: "/cholesky" },
     { label: "Jacobi iteration method", path: "/jacobi"},
-    { label: "Gauss Seidel Iteration method", path: "/gaussseidel"},
-    { label: "ConjugateGradient method", path: "/conjugate"}
+    { label: "Gauss-Seidel Iteration method", path: "/gaussseidel"},
+    { label: "Conjugate Gradient method", path: "/conjugate"}
   ];
 
   const [selectedPath, setSelectedPath] = useState("");
