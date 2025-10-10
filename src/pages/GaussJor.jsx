@@ -1,308 +1,201 @@
 import React, { useState } from "react";
-import Plot from 'react-plotly.js';
+import "katex/dist/katex.min.css";
+import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
+import solveGaussJordan from "../utils/GaussJordanMethod";
 
+function GaussJordan() {
+  const [inputSize, setInputSize] = useState("3");
+  const [matrixA, setMatrixA] = useState([]);
+  const [matrixB, setMatrixB] = useState([]);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
 
-function GaussJor() {
-  const [matrixSize, setMatrixSize] = useState(2);
-  const [matrixA, setMatrixA] = useState(Array(2).fill().map(() => Array(2).fill(0)));
-  const [vectorB, setVectorB] = useState(Array(2).fill(0));
-  const [solution, setSolution] = useState([]);
+  const createEmptyMatrix = (n) =>
+    Array.from({ length: n }, () => Array(n).fill(0));
 
-  const handleSizeChange = (e) => {
-    const size = parseInt(e.target.value);
-    setMatrixSize(size);
-    setMatrixA(Array(size).fill().map(() => Array(size).fill(0)));
-    setVectorB(Array(size).fill(0));
-    setSolution([]);
+  const handleChangeA = (row, col, value) => {
+    const newMatrix = matrixA.map((r) => [...r]);
+    newMatrix[row][col] = value === "" ? "" : parseFloat(value);
+    setMatrixA(newMatrix);
   };
 
-  const handleMatrixChange = (row, col, value) => {
-    const updated = [...matrixA];
-    updated[row][col] = value === "" ? "" : parseFloat(value);
-    setMatrixA(updated);
+  const handleChangeB = (row, value) => {
+    const newB = [...matrixB];
+    newB[row] = value === "" ? "" : parseFloat(value);
+    setMatrixB(newB);
   };
 
-  const handleVectorChange = (i, value) => {
-    const updated = [...vectorB];
-    updated[i] = value === "" ? "" : parseFloat(value);
-    setVectorB(updated);
-  };
+  const handleCreateOrSolve = () => {
+    const n = parseInt(inputSize);
+    if (isNaN(n) || n < 2) {
+      setError("Matrix size must be a number >= 2");
+      return;
+    }
 
-  const calculateGaussJordanElimination = () => {
-  try {
-    const size = matrixSize;
-    const A = matrixA.map((row) => [...row]);
-    const B = [...vectorB];
-    const n = size;
+    setError("");
 
- 
+    if (matrixA.length !== n) {
+      setMatrixA(createEmptyMatrix(n));
+      setMatrixB(Array(n).fill(0));
+      setResult(null);
+      return;
+    }
+
     for (let i = 0; i < n; i++) {
-      
-      if (A[i][i] === 0) {
-        let swapped = false;
-        for (let j = i + 1; j < n; j++) {
-          if (A[j][i] !== 0) {
-            [A[i], A[j]] = [A[j], A[i]];
-            [B[i], B[j]] = [B[j], B[i]];
-            swapped = true;
-            break;
-          }
-        }
-        if (!swapped) {
-          alert("Cannot solve: zero pivot encountered.");
+      for (let j = 0; j < n; j++) {
+        if (
+          matrixA[i][j] === "" ||
+          matrixA[i][j] === undefined ||
+          Number.isNaN(matrixA[i][j])
+        ) {
+          setError("Please fill all entries in Matrix A.");
           return;
         }
       }
-
-     
-      const pivot = A[i][i];
-      for (let j = 0; j < n; j++) {
-        A[i][j] /= pivot;
-      }
-      B[i] /= pivot;
-
-    
-      for (let k = 0; k < n; k++) {
-        if (k !== i) {
-          const factor = A[k][i];
-          for (let j = 0; j < n; j++) {
-            A[k][j] -= factor * A[i][j];
-          }
-          B[k] -= factor * B[i];
-        }
+      if (
+        matrixB[i] === "" ||
+        matrixB[i] === undefined ||
+        Number.isNaN(matrixB[i])
+      ) {
+        setError("Please fill all entries in Matrix B.");
+        return;
       }
     }
 
-    // Final solution is just the adjusted B vector
-    setSolution(B.map((val) => val.toFixed(6)));
-  } catch (error) {
-    alert("Invalid input.");
-  }
-};
-
-
-
-  const inputWidth = 60;
-  const inputMargin = 8;
-  const totalWidth = (inputWidth + inputMargin) * matrixSize;
-
-  const chartData = {
-    labels: solution.map((_, i) => `x${i + 1}`),
-    datasets: [
-      {
-        label: "Variable Values",
-        data: solution.map(Number),
-        borderColor: "#1e3a8a",
-        backgroundColor: "#93c5fd",
-        tension: 0.3,
-        fill: false,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "top", labels: { color: "#1e293b" } },
-      title: {
-        display: true,
-        text: "Cramer's Rule: Solution Values",
-        color: "#1e3a8a",
-      },
-    },
-    scales: {
-      y: {
-        title: { display: true, text: "Value", color: "#1e3a8a" },
-      },
-      x: {
-        title: { display: true, text: "Variable", color: "#1e3a8a" },
-      },
-    },
+    const res = solveGaussJordan(matrixA, matrixB);
+    setResult(res);
   };
 
   return (
     <>
       <Header1 />
       <div
-        className="App"
         style={{
-          padding: "2rem",
-          backgroundColor: "#f9fafb",
-          color: "#1e293b",
-          minHeight: "100vh",
-          boxSizing: "border-box",
+          padding: "1rem",
+          maxWidth: 1000,
+          margin: "auto",
+          textAlign: "center",
         }}
       >
-        <h1 style={{ color: "#1e3a8a", textAlign: "center" }}>Gauss Jordan Elimination</h1>
-
-       
-        <div style={{ marginBottom: "1rem", textAlign: "center" }}>
-          <label>Matrix Size: </label>
-          <div className="s">
-          <select
-            value={matrixSize}
-            onChange={handleSizeChange}
-            style={{ marginLeft: 8, padding: "0.3rem" }}
-          >
-            {[2, 3, 4, 5, 6].map((n) => (
-              <option key={n} value={n}>
-                {n} x {n}
-              </option>
-            ))}
-          </select>
-          </div>
-        </div>
+        <h1 style={{ color: "#1e3a8a" }}>Gauss–Jordan Elimination (Step-by-step)</h1>
 
         <div style={{ marginBottom: "1rem" }}>
-          <h3 style={{ textAlign: "center" }}>Matrix A:</h3>
-          <div
-            style={{
-              width: totalWidth,
-              margin: "0 auto",
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-            }}
-          >
-            {matrixA.map((row, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  gap: "8px",
-                }}
-              >
-                {row.map((val, j) => (
+          <label>
+            <strong>Matrix Size (n × n):</strong>
+          </label>
+          <input
+            type="number"
+            value={inputSize}
+            onChange={(e) => setInputSize(e.target.value)}
+            min={2}
+            style={{ width: "60px", marginLeft: "10px" }}
+          />
+        </div>
+
+        {matrixA.length > 0 && (
+          <>
+            <h3>Matrix A ({matrixA.length}×{matrixA.length}):</h3>
+            <div style={{ display: "inline-block", textAlign: "center" }}>
+              {matrixA.map((row, rowIndex) => (
+                <div key={rowIndex}>
+                  {row.map((value, colIndex) => (
+                    <input
+                      key={colIndex}
+                      type="number"
+                      value={value}
+                      onChange={(e) =>
+                        handleChangeA(rowIndex, colIndex, e.target.value)
+                      }
+                      style={{
+                        width: "70px",
+                        margin: "4px",
+                        textAlign: "center",
+                      }}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            <h3>Vector B ({matrixB.length}×1):</h3>
+            <div style={{ display: "inline-block", textAlign: "center" }}>
+              {matrixB.map((value, index) => (
+                <div key={index}>
                   <input
-                    key={`${i}-${j}`}
                     type="number"
-                    value={val}
-                    onChange={(e) => handleMatrixChange(i, j, e.target.value)}
+                    value={value}
+                    onChange={(e) => handleChangeB(index, e.target.value)}
                     style={{
-                      width: inputWidth,
-                      height: 40,
+                      width: "70px",
+                      margin: "4px",
                       textAlign: "center",
                     }}
                   />
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
-        <div style={{ marginBottom: "1rem" }}>
-          <h3 style={{ textAlign: "center" }}>Vector B:</h3>
-          <div
-            style={{
-              width: totalWidth,
-              margin: "0 auto",
-              display: "flex",
-              justifyContent: "center",
-              gap: "8px",
-            }}
-          >
-            {vectorB.map((val, i) => (
-              <input
-                key={i}
-                type="number"
-                value={val}
-                onChange={(e) => handleVectorChange(i, e.target.value)}
-                style={{
-                  width: inputWidth,
-                  height: 40,
-                  textAlign: "center",
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-     
-        <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+        <div>
           <button
-            onClick={calculateGaussJordanElimination}
+            onClick={handleCreateOrSolve}
             style={{
               padding: "0.5rem 1rem",
               backgroundColor: "#1e3a8a",
               color: "white",
               border: "none",
-              borderRadius: 4,
+              borderRadius: "4px",
               cursor: "pointer",
+              marginTop: "1rem",
             }}
           >
-            Calculate
+            {matrixA.length === parseInt(inputSize)
+              ? "Solve (Gauss–Jordan)"
+              : "Create Matrix"}
           </button>
         </div>
 
-      
-        {solution.length > 0 && (
-          <>
-            <h2 style={{ color: "#1e3a8a", textAlign: "center" }}>Graph</h2>
-            <div style={{ width: 600, height: 400, margin: "0 auto" }}>
-  <Plot
-    data={[
-      {
-        x: solution.map((_, i) => `x${i + 1}`),
-        y: solution.map(Number),
-        type: 'bar',
-        marker: { color: '#1e3a8a' },
-      },
-    ]}
-    layout={{
-      title: { text: "Gauss Jordan Elimination: Solution Values", font: { color: '#1e3a8a' } },
-      xaxis: { title: { text: 'Variable', font: { color: '#1e3a8a' } } },
-      yaxis: { title: { text: 'Value', font: { color: '#1e3a8a' } } },
-      plot_bgcolor: '#f9fafb',
-      paper_bgcolor: '#f9fafb',
-      font: { color: '#1e293b' },
-      height: 400,
-      width: 600,
-    }}
-  />
-</div>
+        {error && (
+          <div style={{ color: "red", marginTop: "1rem" }}>{error}</div>
+        )}
 
-
-   
-            <h2 style={{ marginTop: "2rem", color: "#1e3a8a", textAlign: "center" }}>
-              Results
-            </h2>
-            <table
-              border="1"
-              cellPadding="8"
-              style={{
-                width: "100%",
-                marginTop: "1rem",
-                backgroundColor: "white",
-                textAlign: "center",
-                borderCollapse: "collapse",
-              }}
-            >
-              <thead style={{ backgroundColor: "#e0e7ff" }}>
-                <tr>
-                  {solution.map((_, i) => (
-                    <th key={i}>x{i + 1}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  {solution.map((val, i) => (
-                    <td key={i}>{val}</td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </>
+        {result && (
+          <div
+            style={{
+              backgroundColor: "#f0f4ff",
+              padding: "1rem",
+              borderRadius: "8px",
+              border: "1px solid #cbd5e1",
+              marginTop: "2rem",
+              textAlign: "left",
+            }}
+          >
+            <h3 style={{ textAlign: "center" }}>Solution Steps</h3>
+            <BlockMath math={`\\text{Gauss–Jordan Elimination Steps}`} />
+            {result.steps.map((s, i) => (
+              <div key={i}>
+                <BlockMath math={s.latex} />
+                <BlockMath math={s.matrixLatex} />
+              </div>
+            ))}
+            <br />
+            <BlockMath
+              math={`\\text{Final Reduced Row Echelon Form (RREF):}`}
+            />
+            <BlockMath math={result.finalMatrixLatex} />
+            <br />
+            <BlockMath
+              math={`\\therefore\\ (x_1,\\ x_2,\\ ...,\\ x_n) = (${result.solution
+                .map((v) => v.toFixed(6))
+                .join(",\\; ")})`}
+            />
+          </div>
         )}
       </div>
     </>
   );
 }
 
-export default GaussJor;
-
-
-
+export default GaussJordan;

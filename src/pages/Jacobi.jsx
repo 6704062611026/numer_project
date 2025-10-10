@@ -1,264 +1,203 @@
 import React, { useState } from "react";
-import Plot from "react-plotly.js";
+import "katex/dist/katex.min.css";
+import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
+import solveJacobi from "../utils/JacobiIterationMethod";
 
-function Jacobi() {
-  const [matrixSize, setMatrixSize] = useState(2);
-  const [matrixA, setMatrixA] = useState(Array(2).fill().map(() => Array(2).fill(0)));
-  const [vectorB, setVectorB] = useState(Array(2).fill(0));
-  const [initialGuess, setInitialGuess] = useState(Array(2).fill(0));
-  const [maxIterations, setMaxIterations] = useState(25);
-  const [tolerance, setTolerance] = useState(0.0001);
-  const [solution, setSolution] = useState([]);
-  const [iterationsLog, setIterationsLog] = useState([]);
+function JacobiIteration() {
+  const [size, setSize] = useState("3");
+  const [matrixA, setMatrixA] = useState([]);
+  const [vectorB, setVectorB] = useState([]);
+  const [vectorX0, setVectorX0] = useState([]);
+  const [iterations, setIterations] = useState(5);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
 
-  const handleSizeChange = (e) => {
-    const size = parseInt(e.target.value);
-    setMatrixSize(size);
-    setMatrixA(Array(size).fill().map(() => Array(size).fill(0)));
-    setVectorB(Array(size).fill(0));
-    setInitialGuess(Array(size).fill(0));
-    setSolution([]);
-    setIterationsLog([]);
+  const createEmptyMatrix = (n) => Array.from({ length: n }, () => Array(n).fill(0));
+  const createEmptyVector = (n) => Array(n).fill(0);
+
+  const handleChangeA = (row, col, value) => {
+    const newMatrix = matrixA.map((r) => [...r]);
+    newMatrix[row][col] = value === "" ? "" : parseFloat(value);
+    setMatrixA(newMatrix);
   };
 
-  const handleMatrixChange = (row, col, value) => {
-    const updated = [...matrixA];
-    updated[row][col] = value === "" ? "" : parseFloat(value);
-    setMatrixA(updated);
+  const handleChangeB = (i, value) => {
+    const newB = [...vectorB];
+    newB[i] = value === "" ? "" : parseFloat(value);
+    setVectorB(newB);
   };
 
-  const handleVectorChange = (i, value) => {
-    const updated = [...vectorB];
-    updated[i] = value === "" ? "" : parseFloat(value);
-    setVectorB(updated);
+  const handleChangeX0 = (i, value) => {
+    const newX = [...vectorX0];
+    newX[i] = value === "" ? "" : parseFloat(value);
+    setVectorX0(newX);
   };
 
-  const handleGuessChange = (i, value) => {
-    const updated = [...initialGuess];
-    updated[i] = value === "" ? "" : parseFloat(value);
-    setInitialGuess(updated);
-  };
-
-  const calculateJacobi = () => {
-    const x = [...initialGuess];
-    const newX = Array(matrixSize).fill(0);
-    const logs = [];
-
-    for (let iter = 0; iter < maxIterations; iter++) {
-      for (let i = 0; i < matrixSize; i++) {
-        let sum = 0;
-        for (let j = 0; j < matrixSize; j++) {
-          if (j !== i) {
-            sum += matrixA[i][j] * x[j];
-          }
-        }
-        newX[i] = (vectorB[i] - sum) / matrixA[i][i];
-      }
-
-      const diff = newX.map((val, i) => Math.abs(val - x[i]));
-      logs.push([...newX]);
-
-      if (diff.every((d) => d < tolerance)) {
-        setSolution(newX.map((val) => val.toFixed(6)));
-        setIterationsLog(logs);
-        return;
-      }
-
-      for (let i = 0; i < matrixSize; i++) {
-        x[i] = newX[i];
-      }
+  const handleCreateOrSolve = () => {
+    const n = parseInt(size);
+    if (isNaN(n) || n < 2) {
+      setError("Matrix size must be ≥ 2");
+      return;
     }
 
-    setSolution(x.map((val) => val.toFixed(6)));
-    setIterationsLog(logs);
-  };
+    setError("");
 
-  const inputWidth = 60;
-  const inputMargin = 8;
-  const totalWidth = (inputWidth + inputMargin) * matrixSize;
+    // Create Matrix
+    if (matrixA.length !== n) {
+      setMatrixA(createEmptyMatrix(n));
+      setVectorB(createEmptyVector(n));
+      setVectorX0(createEmptyVector(n));
+      setResult(null);
+      return;
+    }
+
+    // Validate all entries
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (matrixA[i][j] === "" || matrixA[i][j] === undefined)
+          return setError("Please fill all entries in Matrix A.");
+      }
+      if (vectorB[i] === "" || vectorB[i] === undefined)
+        return setError("Please fill all entries in Vector B.");
+      if (vectorX0[i] === "" || vectorX0[i] === undefined)
+        return setError("Please fill all initial guesses X₀.");
+    }
+
+    const res = solveJacobi(matrixA, vectorB, vectorX0, iterations);
+    setResult(res);
+  };
 
   return (
     <>
       <Header1 />
-      <div
-        className="App"
-        style={{
-          padding: "2rem",
-          backgroundColor: "#f9fafb",
-          color: "#1e293b",
-          minHeight: "100vh",
-          boxSizing: "border-box",
-        }}
-      >
-        <h1 style={{ color: "#1e3a8a", textAlign: "center" }}>Jacobi Iteration Method</h1>
+      <div style={{ padding: "1rem", maxWidth: 1000, margin: "auto", textAlign: "center" }}>
+        <h1 style={{ color: "#1e3a8a" }}>Jacobi Iteration Method</h1>
 
-        
-        <div style={{ marginBottom: "1rem", textAlign: "center" }}>
-          <label>Matrix Size: </label>
-          <select
-            value={matrixSize}
-            onChange={handleSizeChange}
-            style={{ marginLeft: 8, padding: "0.3rem" }}
-          >
-            {[2, 3, 4, 5, 6].map((n) => (
-              <option key={n} value={n}>{n} x {n}</option>
-            ))}
-          </select>
-        </div>
-
-        
         <div style={{ marginBottom: "1rem" }}>
-          <h3 style={{ textAlign: "center" }}>Matrix A:</h3>
-          <div style={{
-            width: totalWidth,
-            margin: "0 auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-          }}>
-            {matrixA.map((row, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
-                {row.map((val, j) => (
-                  <input
-                    key={`${i}-${j}`}
-                    type="number"
-                    value={val}
-                    onChange={(e) => handleMatrixChange(i, j, e.target.value)}
-                    style={{ width: inputWidth, height: 40, textAlign: "center" }}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Vector B */}
-        <div style={{ marginBottom: "1rem" }}>
-          <h3 style={{ textAlign: "center" }}>Vector B:</h3>
-          <div style={{ width: totalWidth, margin: "0 auto", display: "flex", justifyContent: "center", gap: "8px" }}>
-            {vectorB.map((val, i) => (
-              <input
-                key={i}
-                type="number"
-                value={val}
-                onChange={(e) => handleVectorChange(i, e.target.value)}
-                style={{ width: inputWidth, height: 40, textAlign: "center" }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Initial Guess */}
-        <div style={{ marginBottom: "1rem" }}>
-          <h3 style={{ textAlign: "center" }}>Initial Guess (x₀):</h3>
-          <div style={{ width: totalWidth, margin: "0 auto", display: "flex", justifyContent: "center", gap: "8px" }}>
-            {initialGuess.map((val, i) => (
-              <input
-                key={i}
-                type="number"
-                value={val}
-                onChange={(e) => handleGuessChange(i, e.target.value)}
-                style={{ width: inputWidth, height: 40, textAlign: "center" }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Iteration Settings */}
-        <div style={{ textAlign: "center", marginBottom: "1rem" }}>
-          <label style={{ marginRight: 8 }}>Max Iterations: </label>
+          <label><strong>Matrix Size (n × n):</strong></label>
           <input
             type="number"
-            value={maxIterations}
-            onChange={(e) => setMaxIterations(parseInt(e.target.value))}
-            style={{ width: 80, marginRight: 16 }}
-          />
-          <label style={{ marginRight: 8 }}>Tolerance: </label>
-          <input
-            type="number"
-            step="0.00001"
-            value={tolerance}
-            onChange={(e) => setTolerance(parseFloat(e.target.value))}
-            style={{ width: 80 }}
+            value={size}
+            onChange={(e) => setSize(e.target.value)}
+            min={2}
+            style={{ width: "60px", marginLeft: "10px" }}
           />
         </div>
 
-        {/* Calculate Button */}
-        <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+        {matrixA.length > 0 && (
+          <>
+            <h3>Matrix A:</h3>
+            <div style={{ display: "inline-block" }}>
+              {matrixA.map((row, i) => (
+                <div key={i}>
+                  {row.map((value, j) => (
+                    <input
+                      key={j}
+                      type="number"
+                      value={value}
+                      onChange={(e) => handleChangeA(i, j, e.target.value)}
+                      style={{
+                        width: "70px",
+                        margin: "4px",
+                        textAlign: "center",
+                      }}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            <h3>Vector B:</h3>
+            <div>
+              {vectorB.map((v, i) => (
+                <input
+                  key={i}
+                  type="number"
+                  value={v}
+                  onChange={(e) => handleChangeB(i, e.target.value)}
+                  style={{
+                    width: "70px",
+                    margin: "4px",
+                    textAlign: "center",
+                  }}
+                />
+              ))}
+            </div>
+
+            <h3>Initial Guess X₀:</h3>
+            <div>
+              {vectorX0.map((v, i) => (
+                <input
+                  key={i}
+                  type="number"
+                  value={v}
+                  onChange={(e) => handleChangeX0(i, e.target.value)}
+                  style={{
+                    width: "70px",
+                    margin: "4px",
+                    textAlign: "center",
+                  }}
+                />
+              ))}
+            </div>
+
+            <h3>Number of Iterations:</h3>
+            <input
+              type="number"
+              value={iterations}
+              onChange={(e) => setIterations(e.target.value)}
+              min={1}
+              style={{ width: "70px" }}
+            />
+          </>
+        )}
+
+        <div>
           <button
-            onClick={calculateJacobi}
+            onClick={handleCreateOrSolve}
             style={{
               padding: "0.5rem 1rem",
               backgroundColor: "#1e3a8a",
               color: "white",
               border: "none",
-              borderRadius: 4,
+              borderRadius: "4px",
               cursor: "pointer",
+              marginTop: "1rem",
             }}
           >
-            Calculate
+            {matrixA.length === parseInt(size)
+              ? "Iterate"
+              : "Create Matrix"}
           </button>
         </div>
 
-        {/* Solution & Graph */}
-        {solution.length > 0 && (
-          <>
-            <h2 style={{ color: "#1e3a8a", textAlign: "center" }}>Graph</h2>
-            <div style={{ width: 600, height: 400, margin: "0 auto" }}>
-              <Plot
-                data={[
-                  {
-                    x: solution.map((_, i) => `x${i + 1}`),
-                    y: solution.map(Number),
-                    type: 'bar',
-                    marker: { color: '#1e3a8a' },
-                  },
-                ]}
-                layout={{
-                  title: { text: "Jacobi Method: Final Solution", font: { color: '#1e3a8a' } },
-                  xaxis: { title: { text: 'Variable', font: { color: '#1e3a8a' } } },
-                  yaxis: { title: { text: 'Value', font: { color: '#1e3a8a' } } },
-                  plot_bgcolor: '#f9fafb',
-                  paper_bgcolor: '#f9fafb',
-                  font: { color: '#1e293b' },
-                }}
-              />
-            </div>
+        {error && <div style={{ color: "red", marginTop: "1rem" }}>{error}</div>}
 
-            {/* Result Table */}
-            <h2 style={{ marginTop: "2rem", color: "#1e3a8a", textAlign: "center" }}>Final Result</h2>
-            <table
-              border="1"
-              cellPadding="8"
-              style={{
-                width: "100%",
-                marginTop: "1rem",
-                backgroundColor: "white",
-                textAlign: "center",
-                borderCollapse: "collapse",
-              }}
-            >
-              <thead style={{ backgroundColor: "#e0e7ff" }}>
-                <tr>
-                  {solution.map((_, i) => (
-                    <th key={i}>x{i + 1}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  {solution.map((val, i) => (
-                    <td key={i}>{val}</td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </>
+        {result && (
+          <div
+            style={{
+              backgroundColor: "#f0f4ff",
+              padding: "1rem",
+              borderRadius: "8px",
+              border: "1px solid #cbd5e1",
+              marginTop: "2rem",
+              textAlign: "left",
+            }}
+          >
+            <h3 style={{ textAlign: "center" }}>Step-by-step Jacobi Iteration</h3>
+            {result.steps.map((s, i) => (
+              <div key={i}>
+                <BlockMath math={s} />
+              </div>
+            ))}
+            <h3>Final Approximation:</h3>
+            <BlockMath math={`x^{(${iterations})} = ${result.finalLatex}`} />
+          </div>
         )}
       </div>
     </>
   );
 }
 
-export default Jacobi;
+export default JacobiIteration;
