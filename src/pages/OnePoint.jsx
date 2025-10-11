@@ -1,4 +1,3 @@
-// src/pages/OnePoint.jsx
 import React, { useState } from "react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";

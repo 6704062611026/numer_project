@@ -32,7 +32,7 @@ function Graphical() {
 
     const rawPoints = graphical.generatePoints();
 
-    // ใช้ zoom-in หาค่า root ที่ f(x) ใกล้ 0 ที่สุด
+   
     const estimated = graphical.findRootByZoomIn();
 
     if (Math.abs(estimated.y) > tol) {
@@ -53,7 +53,7 @@ function Graphical() {
       <div className="App" style={{ padding: "1rem", maxWidth: 700, margin: "auto" }}>
         <h1 style={{ color: "#1e3a8a" }}>Graphical Method</h1>
 
-        {/* แสดงสมการในรูปแบบ LaTeX */}
+       
         <div
           style={{
             marginBottom: "1rem",
@@ -66,7 +66,7 @@ function Graphical() {
           <BlockMath math={`f(x) = ${mathjsToLatex(equation)}`} />
         </div>
 
-        {/* Input Section */}
+        
         <div style={{ marginBottom: "1rem" }}>
           <label>Equation:</label>
           <input
@@ -122,7 +122,7 @@ function Graphical() {
           Calculate
         </button>
 
-        {/* แสดงผลลัพธ์ */}
+      
         {dataPoints.length > 0 && (
           <>
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>

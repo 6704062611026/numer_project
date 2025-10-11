@@ -52,7 +52,7 @@ function Bisection() {
       <div className="App" style={{ padding: "1rem", maxWidth: 700, margin: "auto" }}>
         <h1 style={{ color: "#1e3a8a" }}>Bisection Method</h1>
 
-        {/* แสดงสมการในรูปแบบ LaTeX */}
+
         <div style={{
           marginBottom: "1rem",
           backgroundColor: "#f0f4ff",
@@ -117,7 +117,7 @@ function Bisection() {
           Calculate
         </button>
 
-        {/* แสดงผลลัพธ์ */}
+
         {results.length > 0 && (
           <>
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>

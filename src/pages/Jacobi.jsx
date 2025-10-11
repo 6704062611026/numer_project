@@ -43,7 +43,7 @@ function JacobiIteration() {
 
     setError("");
 
-    // Create Matrix
+    
     if (matrixA.length !== n) {
       setMatrixA(createEmptyMatrix(n));
       setVectorB(createEmptyVector(n));
@@ -52,7 +52,7 @@ function JacobiIteration() {
       return;
     }
 
-    // Validate all entries
+   
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
         if (matrixA[i][j] === "" || matrixA[i][j] === undefined)

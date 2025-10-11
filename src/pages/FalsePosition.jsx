@@ -1,10 +1,9 @@
-// src/pages/FalsePosition.jsx
 import React, { useState } from "react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header from "../components/Header";
 import Plot from "react-plotly.js";
-import FalsePositionMethod from "../utils/FalsePositionMethod"; // ⬅️ เปลี่ยนตรงนี้
+import FalsePositionMethod from "../utils/FalsePositionMethod"; 
 
 function FalsePosition() {
   const [equation, setEquation] = useState("43*x^9");
@@ -49,7 +48,6 @@ function FalsePosition() {
           <BlockMath math={`f(x) = ${mathjsToLatex(equation)}`} />
         </div>
 
-        {/* Inputs */}
         <div style={{ marginBottom: "1rem" }}>
           <label>Equation:</label>
           <input
@@ -104,7 +102,7 @@ function FalsePosition() {
           Calculate
         </button>
 
-        {/* Result Table and Graph */}
+       
         {results.length > 0 && (
           <>
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>
