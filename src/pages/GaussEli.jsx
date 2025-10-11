@@ -35,7 +35,7 @@ function GaussElimination() {
     }
     setError("");
 
-    // if matrices not created or size changed -> create
+   
     if (matrixA.length !== n) {
       setMatrixA(createEmptyMatrix(n));
       setMatrixB(Array(n).fill(0));
@@ -43,7 +43,7 @@ function GaussElimination() {
       return;
     }
 
-    // validate entries
+   
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
         if (matrixA[i][j] === "" || matrixA[i][j] === undefined || Number.isNaN(matrixA[i][j])) {
@@ -158,7 +158,7 @@ function GaussElimination() {
             <BlockMath math={`\\text{Forward Elimination (Gaussian Elimination)}`} />
             {result.forward.map((item, idx) => (
               <div key={idx} style={{ marginBottom: "0.5rem" }}>
-                {/* item.type: "swap" | "factor" */}
+              
                 {item.type === "swap" && (
                   <>
                     <BlockMath math={`\\text{Swap rows: } ${item.latex}`} />

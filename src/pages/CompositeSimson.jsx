@@ -1,5 +1,3 @@
-// src/pages/SimpsonIntegration.jsx
-
 import React, { useState } from "react";
 import Plot from "react-plotly.js";
 import { evaluate, parse } from "mathjs";
@@ -26,13 +24,13 @@ function CompositeSimpsonIntegration() {
   const [fx, setFx] = useState("x^3");
   const [a, setA] = useState(0);
   const [b, setB] = useState(4);
-  const [n, setN] = useState(4); // ต้องเป็นเลขคู่
+  const [n, setN] = useState(4); 
   const [result, setResult] = useState(null);
 
   const calculate = () => {
     try {
       const parsed = parse(fx);
-      parsed.evaluate({ x: 1 }); // ทดสอบสมการ
+      parsed.evaluate({ x: 1 }); 
 
       const value = compositeSimpsonRule(fx, parseFloat(a), parseFloat(b), parseInt(n));
       setResult(value);

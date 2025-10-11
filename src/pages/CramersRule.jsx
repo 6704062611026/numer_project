@@ -5,7 +5,7 @@ import Header1 from "../components/Header1";
 import solveCramer from "../utils/CramerRuleMethod";
 
 function CramerRule() {
-  const [inputSize, setInputSize] = useState("3"); // รับเป็น string ก่อน
+  const [inputSize, setInputSize] = useState("3"); 
   const [matrixA, setMatrixA] = useState([]);
   const [matrixB, setMatrixB] = useState([]);
   const [result, setResult] = useState(null);
@@ -38,12 +38,12 @@ function CramerRule() {
 
     setError("");
 
-    // ถ้ายังไม่มี matrix สร้างใหม่
+  
     if (matrixA.length !== size) {
       setMatrixA(createEmptyMatrix(size));
       setMatrixB(Array(size).fill(0));
       setResult(null);
-      return; // ยังไม่คิดตอนนี้ ให้ user ใส่ค่าก่อน
+      return; 
     }
 
     const res = solveCramer(matrixA, matrixB);
@@ -127,14 +127,14 @@ function CramerRule() {
           </button>
         </div>
 
-        {/* แสดง Error */}
+      
         {error && (
           <div style={{ color: "red", marginTop: "1rem" }}>
             {error}
           </div>
         )}
 
-        {/* แสดงผลลัพธ์ */}
+     
         {result && !result.error && (
           <div style={{
             backgroundColor: "#f0f4ff",
@@ -156,7 +156,7 @@ function CramerRule() {
           </div>
         )}
 
-        {/* แสดงกรณี det = 0 */}
+      
         {result?.error && (
           <div style={{ color: "red", marginTop: "1rem" }}>
             {result.error}

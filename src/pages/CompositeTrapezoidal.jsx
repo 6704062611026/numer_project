@@ -24,8 +24,8 @@ function CompositeTrapezoidalIntegration() {
 
   const calculate = () => {
     try {
-      const parsed = parse(fx); // ตรวจสอบว่าเป็นสมการได้
-      parsed.evaluate({ x: 1 }); // ลอง evaluate
+      const parsed = parse(fx); 
+      parsed.evaluate({ x: 1 }); 
 
       const value = compositeTrapezoidalRule(fx, parseFloat(a), parseFloat(b), parseInt(n));
       setResult(value);

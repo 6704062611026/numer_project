@@ -1,4 +1,3 @@
-// src/pages/NewtonRaphson.jsx
 import React, { useState } from "react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
@@ -103,7 +102,7 @@ function NewtonRaphson() {
           </div>
         )}
 
-        {/* Results */}
+ 
         {results.length > 0 && (
           <>
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>
