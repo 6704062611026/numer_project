@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-
+import History from "./pages/History";
 import Home from "./pages/Home";
 import Graphical from "./pages/Graphical";
 import Bisection from "./pages/Bisection";
@@ -58,6 +58,7 @@ function App() {
         <Route path="/singlesimpson" element={<SingleSimpsonIntegration/>}/>
         <Route path="/compositesimpson" element={<CompositeSimpsonIntegration/>}/>
         <Route path="/numer" element={<NumericalDifferentiation/>}/>
+        <Route path="/history" element={<History />} />
       </Routes>
     </Router>
   );

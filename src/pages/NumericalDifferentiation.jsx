@@ -118,6 +118,20 @@ function NumericalDifferentiation() {
     } catch (err) {
       alert("Function parsing error. Please check your expression.");
     }
+     fetch("http://localhost:5000/api/history", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    method: "NumericalDifferentiation",
+    equation: fx,
+  }),
+})
+  .then((res) => res.json())
+  .then((data) => {
+    console.log("History saved:", data);
+  });
   };
 
   const renderFormula = () => {
@@ -144,20 +158,7 @@ function NumericalDifferentiation() {
       <BlockMath math={`\\text{No detailed formula rendered for this case yet.}`}/>
     );
   };
-  fetch("http://localhost:5000/api/history", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    method: "NumericalDifferentiation",
-    equation: fx,
-  }),
-})
-  .then((res) => res.json())
-  .then((data) => {
-    console.log("History saved:", data);
-  });
+ 
 
   return (
     <>

@@ -7,17 +7,20 @@ function SimpleRegression() {
   const [predictX, setPredictX] = useState("");
   const [predictedY, setPredictedY] = useState(null);
 
+  // เพิ่มจุดใหม่
   const addPoint = () => {
     setPoints([...points, { x: 0, y: 0 }]);
   };
 
+  // อัปเดตค่า x หรือ y ของแต่ละจุด
   const handlePointChange = (index, key, value) => {
     const updated = [...points];
     updated[index][key] = parseFloat(value);
     setPoints(updated);
-    setPredictedY(null); // Reset result if data changes
+    setPredictedY(null); // reset result
   };
 
+  // คำนวณ regression coefficients
   const calculateRegression = () => {
     const n = points.length;
     const sumX = points.reduce((sum, p) => sum + p.x, 0);
@@ -34,16 +37,36 @@ function SimpleRegression() {
     return { a, b };
   };
 
+  // บันทึก history ลง database
+  const saveHistory = (a, b) => {
+    const equation = `f(x) = ${a.toFixed(6)} + ${b.toFixed(6)}*x`;
+    fetch("http://localhost:5000/api/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "Simple Regression",
+        equation,
+      }),
+    })
+      .then(res => res.json())
+      .then(data => console.log("History saved:", data))
+      .catch(err => console.error("Error saving history:", err));
+  };
+
+  // คำนวณ predictedY และ save history
   const calculate = () => {
     if (predictX === "") return;
     const { a, b } = calculateRegression();
     const x = parseFloat(predictX);
     const y = a + b * x;
     setPredictedY(y);
+    saveHistory(a, b);
   };
 
   const { a, b } = calculateRegression();
-  const sortedPoints = [...points].sort((a, b) => a.x - b.x);
+
+  // เตรียมข้อมูล plot
+  const sortedPoints = [...points].sort((p1, p2) => p1.x - p2.x);
   const minX = Math.min(...sortedPoints.map(p => p.x));
   const maxX = Math.max(...sortedPoints.map(p => p.x));
   const range = maxX - minX;

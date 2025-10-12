@@ -12,14 +12,27 @@ function NewtonInterpolation() {
   const [plotXs, setPlotXs] = useState([]);
   const [plotYs, setPlotYs] = useState([]);
 
-  const addPoint = () => {
-    setPoints([...points, { x: 0, y: 0 }]);
-  };
-
+  const addPoint = () => setPoints([...points, { x: 0, y: 0 }]);
   const handlePointChange = (index, key, value) => {
     const updated = [...points];
     updated[index][key] = parseFloat(value);
     setPoints(updated);
+  };
+
+  // ฟังก์ชันบันทึก history ลง database
+  const saveHistory = (methodName) => {
+    const equation = points.map((p, i) => `(${p.x}, ${p.y})`).join(", ");
+    fetch("http://localhost:5000/api/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: methodName,
+        points: equation,
+      }),
+    })
+      .then(res => res.json())
+      .then(data => console.log("History saved:", data))
+      .catch(err => console.error("Error saving history:", err));
   };
 
   const calculate = () => {
@@ -33,6 +46,8 @@ function NewtonInterpolation() {
     setYs(method.getYs());
     setPlotXs(plotXs);
     setPlotYs(plotYs);
+
+    saveHistory("Newton Divided-Differences Interpolation");
   };
 
   return (
@@ -41,7 +56,6 @@ function NewtonInterpolation() {
       <div className="App" style={{ padding: "2rem" }}>
         <h1 style={{ color: "#1e3a8a", textAlign: "center" }}>Newton Divided-Differences Interpolation</h1>
 
-        {/* Input Points */}
         {points.map((point, index) => (
           <div key={index} style={{ marginBottom: "1rem", textAlign: "center" }}>
             <label style={{ marginRight: 8 }}>x{index + 1}:</label>
@@ -75,20 +89,10 @@ function NewtonInterpolation() {
           </button>
         </div>
 
-        {/* Divided Difference Table */}
         {dividedDiffTable.length > 0 && (
           <>
             <h2 style={{ color: "#1e3a8a", textAlign: "center" }}>Divided Difference Table</h2>
-            <table
-              border="1"
-              cellPadding="8"
-              style={{
-                width: "100%",
-                backgroundColor: "white",
-                textAlign: "center",
-                borderCollapse: "collapse",
-              }}
-            >
+            <table border="1" cellPadding="8" style={{ width: "100%", backgroundColor: "white", textAlign: "center", borderCollapse: "collapse" }}>
               <thead style={{ backgroundColor: "#e0e7ff" }}>
                 <tr>
                   <th>x</th>
@@ -110,7 +114,6 @@ function NewtonInterpolation() {
               </tbody>
             </table>
 
-            {/* Graph */}
             <h2 style={{ color: "#1e3a8a", textAlign: "center", marginTop: "2rem" }}>Graph</h2>
             <div style={{ width: 600, height: 400, margin: "0 auto" }}>
               <Plot

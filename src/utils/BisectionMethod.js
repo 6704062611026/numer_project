@@ -1,4 +1,3 @@
-// src/utils/BisectionMethod.js
 import { evaluate } from "mathjs";
 
 class BisectionMethod {

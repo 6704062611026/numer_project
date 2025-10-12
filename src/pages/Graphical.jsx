@@ -27,40 +27,37 @@ function Graphical() {
   };
 
   const calculateGraphical = () => {
-    const tol = parseFloat(tolerance) || 0.000001;
-    const graphical = new GraphicalMethod(equation, xStart, xEnd, 0.1, tol);
+  const tol = parseFloat(tolerance) || 0.000001;
+  const graphical = new GraphicalMethod(equation, xStart, xEnd, 0.1, tol);
 
-    const rawPoints = graphical.generatePoints();
+  const rawPoints = graphical.generatePoints();
+  const estimated = graphical.findRootByZoomIn();
 
-   
-    const estimated = graphical.findRootByZoomIn();
+  if (Math.abs(estimated.y) > tol) {
+    alert(`ไม่พบค่า f(x) ที่เข้าใกล้ 0 ภายใน tolerance ที่กำหนด`);
+    setDataPoints([]);
+    setEstimatedRoot(null);
+    return;
+  }
 
-    if (Math.abs(estimated.y) > tol) {
-      alert(`ไม่พบค่า f(x) ที่เข้าใกล้ 0 ภายใน tolerance ที่กำหนด`);
-      setDataPoints([]);
-      setEstimatedRoot(null);
-      return;
-    }
+  const withError = graphical.appendErrorFromEstimatedRoot(rawPoints, estimated.x);
+  setEstimatedRoot(estimated.x);
+  setDataPoints(withError);
 
-    const withError = graphical.appendErrorFromEstimatedRoot(rawPoints, estimated.x);
-    setEstimatedRoot(estimated.x);
-    setDataPoints(withError);
-  };
-
+  // ✅ ส่งไป backend เฉพาะตอนกด Calculate
   fetch("http://localhost:5000/api/history", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    method: "Graphical",
-    equation: equation,
-  }),
-})
-  .then((res) => res.json())
-  .then((data) => {
-    console.log("History saved:", data);
-  });
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      method: "Graphical",
+      equation: equation,
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => console.log("History saved:", data))
+    .catch((error) => console.error("Error saving history:", error));
+};
+
 
   return (
     <>

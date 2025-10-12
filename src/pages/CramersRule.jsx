@@ -10,6 +10,12 @@ function CramerRule() {
   const [matrixB, setMatrixB] = useState([]);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const equationData = {
+  method: "Cramer",
+  matrixA: matrixA,
+  matrixB: matrixB,
+};
+
 
   function createEmptyMatrix(n) {
     return Array.from({ length: n }, () => Array(n).fill(0));
@@ -28,27 +34,49 @@ function CramerRule() {
   };
 
   const handleSolve = () => {
-    const size = parseInt(inputSize);
+  const size = parseInt(inputSize);
 
-    if (isNaN(size) || size < 2) {
-      setError("Matrix size must be a number greater than or equal to 2");
-      setResult(null);
-      return;
+  if (isNaN(size) || size < 2) {
+    setError("Matrix size must be a number greater than or equal to 2");
+    setResult(null);
+    return;
+  }
+
+  setError("");
+
+  // ตรวจสอบว่า matrixA ถูกสร้างและมีค่า
+  if (matrixA.length !== size || matrixB.length !== size) {
+    setMatrixA(createEmptyMatrix(size));
+    setMatrixB(Array(size).fill(0));
+    setResult(null);
+    return; 
+  }
+
+  // เช็คว่ามีค่าเป็นตัวเลขครบก่อน solve
+  for (let i = 0; i < size; i++) {
+    if (!matrixB[i] && matrixB[i] !== 0) return;
+    for (let j = 0; j < size; j++) {
+      if (!matrixA[i][j] && matrixA[i][j] !== 0) return;
     }
+  }
 
-    setError("");
+  const res = solveCramer(matrixA, matrixB);
+  setResult(res);
 
-  
-    if (matrixA.length !== size) {
-      setMatrixA(createEmptyMatrix(size));
-      setMatrixB(Array(size).fill(0));
-      setResult(null);
-      return; 
-    }
-
-    const res = solveCramer(matrixA, matrixB);
-    setResult(res);
-  };
+  // ส่ง history หลัง matrix ถูกกรอกครบ
+  fetch("http://localhost:5000/api/history", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      method: "Cramer",
+      matrixA,
+      matrixB,
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => console.log("History saved:", data))
+    .catch((error) => console.error("Error saving history:", error));
+};
 
   return (
     <>

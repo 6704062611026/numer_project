@@ -46,16 +46,23 @@ function Header4() {
         <h1 style={{ color: "white" }}>Numerical</h1>
         <h2>
           <Link
-  to="/"
-  className="nav-link"
-  onClick={() => {
-    
-    localStorage.removeItem("selected-linear-method");    
-  }}
->
-  Home
-</Link>
+            to="/"
+            className="nav-link"
+            onClick={() => {
+              localStorage.removeItem("selected-method");
+            }}
+            style={{ color: "white", textDecoration: "none", marginRight: "20px" }}
+          >
+            Home
+          </Link>
 
+          <Link
+            to="/history"
+            className="nav-link"
+            style={{ color: "white", textDecoration: "none" }}
+          >
+            History
+          </Link>
         </h2>
       </nav>
       <div className="s">

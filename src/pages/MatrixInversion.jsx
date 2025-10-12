@@ -4,18 +4,38 @@ import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
 import invertMatrixStepwise from "../utils/MatrixInversionMethod";
 
+// ... import เดิม ๆ
+
 function MatrixInversion() {
   const [size, setSize] = useState("3");
   const [matrixA, setMatrixA] = useState([]);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
+  // ฟังก์ชันสร้าง matrix ว่าง
   const createEmptyMatrix = (n) => Array.from({ length: n }, () => Array(n).fill(0));
 
   const handleChangeA = (row, col, value) => {
     const newMatrix = matrixA.map((r) => [...r]);
     newMatrix[row][col] = value === "" ? "" : parseFloat(value);
     setMatrixA(newMatrix);
+  };
+
+  // ฟังก์ชันบันทึกลง database
+  const saveHistory = (matrix, inverse) => {
+    fetch("http://localhost:5000/api/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "Matrix Inversion",
+        size: matrix.length,
+        matrix: matrix.map(row => row.join(",")).join(";"),
+        inverse: inverse,
+      }),
+    })
+      .then(res => res.json())
+      .then(data => console.log("History saved:", data))
+      .catch(err => console.error("Error saving history:", err));
   };
 
   const handleCreateOrSolve = () => {
@@ -35,11 +55,7 @@ function MatrixInversion() {
 
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
-        if (
-          matrixA[i][j] === "" ||
-          matrixA[i][j] === undefined ||
-          Number.isNaN(matrixA[i][j])
-        ) {
+        if (matrixA[i][j] === "" || matrixA[i][j] === undefined || Number.isNaN(matrixA[i][j])) {
           setError("Please fill all entries in Matrix A.");
           return;
         }
@@ -48,7 +64,11 @@ function MatrixInversion() {
 
     const res = invertMatrixStepwise(matrixA);
     setResult(res);
+
+    // บันทึกลง database (inverseLatex หรือ res.finalLatex)
+    saveHistory(matrixA, res.inverseLatex);
   };
+
 
   return (
     <>

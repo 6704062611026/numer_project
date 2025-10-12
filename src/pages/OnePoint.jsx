@@ -28,8 +28,7 @@ function OnePoint() {
     const method = new OnePointMethod(equation, initialGuess, tolerance);
     const resultData = method.solve();
     setResults(resultData);
-  };
-fetch("http://localhost:5000/api/history", {
+    fetch("http://localhost:5000/api/history", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -43,6 +42,8 @@ fetch("http://localhost:5000/api/history", {
   .then((data) => {
     console.log("History saved:", data);
   });
+  };
+
   return (
     <>
       <Header />

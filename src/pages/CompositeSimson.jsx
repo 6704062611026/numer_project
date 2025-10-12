@@ -37,6 +37,20 @@ function CompositeSimpsonIntegration() {
     } catch (error) {
       alert(error.message || "Invalid input!");
     }
+     fetch("http://localhost:5000/api/history", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    method: "CompositeSimson",
+    equation: fx,
+  }),
+})
+  .then((res) => res.json())
+  .then((data) => {
+    console.log("History saved:", data);
+  });
   };
 
   const plotXs = Array.from({ length: 200 }, (_, i) => {
@@ -51,20 +65,7 @@ function CompositeSimpsonIntegration() {
       return null;
     }
   });
-  fetch("http://localhost:5000/api/history", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    method: "CompositeSimson",
-    equation: fx,
-  }),
-})
-  .then((res) => res.json())
-  .then((data) => {
-    console.log("History saved:", data);
-  });
+ 
 
   return (
     <>

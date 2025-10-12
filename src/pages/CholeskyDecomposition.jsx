@@ -19,36 +19,48 @@ function CholeskyDecomposition() {
   };
 
   const handleCreateOrSolve = () => {
-    const n = parseInt(size);
-    if (isNaN(n) || n < 2) {
-      setError("Matrix size must be ≥ 2");
-      return;
-    }
+  const n = parseInt(size);
+  if (isNaN(n) || n < 2) {
+    setError("Matrix size must be ≥ 2");
+    return;
+  }
 
-    setError("");
+  setError("");
 
-    if (matrixA.length !== n) {
-      setMatrixA(createEmptyMatrix(n));
-      setResult(null);
-      return;
-    }
+  if (matrixA.length !== n) {
+    setMatrixA(createEmptyMatrix(n));
+    setResult(null);
+    return;
+  }
 
-    for (let i = 0; i < n; i++) {
-      for (let j = 0; j < n; j++) {
-        if (
-          matrixA[i][j] === "" ||
-          matrixA[i][j] === undefined ||
-          Number.isNaN(matrixA[i][j])
-        ) {
-          setError("Please fill all entries in Matrix A.");
-          return;
-        }
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      if (matrixA[i][j] === "" || matrixA[i][j] === undefined || Number.isNaN(matrixA[i][j])) {
+        setError("Please fill all entries in Matrix A.");
+        return;
       }
     }
+  }
 
-    const res = solveCholesky(matrixA);
-    setResult(res);
-  };
+  const res = solveCholesky(matrixA);
+  setResult(res);
+
+  // ✅ ส่ง matrix + result ไป backend
+  fetch("http://localhost:5000/api/history", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      method: "Cholesky",
+      matrixA: JSON.stringify(matrixA),  // แปลงเป็น string ก่อนเก็บ
+      result: JSON.stringify(res),         // result จาก solveCholesky
+    }),
+  })
+    .then((r) => r.json())
+    .then((data) => alert("History saved successfully!"))
+    .catch((err) => alert("Error saving history: " + err));
+};
+
+
 
   return (
     <>

@@ -32,6 +32,20 @@ function CompositeTrapezoidalIntegration() {
     } catch (error) {
       alert("Invalid function expression!");
     }
+    fetch("http://localhost:5000/api/history", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    method: "CompositeTrapezoidal",
+    equation: fx,
+  }),
+})
+  .then((res) => res.json())
+  .then((data) => {
+    console.log("History saved:", data);
+  });
   };
 
   const plotXs = Array.from({ length: 200 }, (_, i) => {
@@ -61,20 +75,7 @@ function CompositeTrapezoidalIntegration() {
       y: [0, y0, y1, 0],
     });
   }
-fetch("http://localhost:5000/api/history", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    method: "CompositeTrapezoidal",
-    equation: fx,
-  }),
-})
-  .then((res) => res.json())
-  .then((data) => {
-    console.log("History saved:", data);
-  });
+
 
   return (
     <>

@@ -4,14 +4,12 @@ import { BlockMath } from "react-katex";
 import Header from "../components/Header";
 import Plot from "react-plotly.js";
 import BisectionMethod from "../utils/BisectionMethod"; 
-
 function Bisection() {
   const [equation, setEquation] = useState("43*x^9");
   const [xl, setXl] = useState(1);
   const [xr, setXr] = useState(2);
   const [tolerance, setTolerance] = useState(0.000001);
   const [results, setResults] = useState([]);
-
   const mathjsToLatex = (expr) => {
     try {
       return expr
@@ -26,24 +24,24 @@ function Bisection() {
   };
 
   const calculateBisection = () => {
-    const bisection = new BisectionMethod(equation, xl, xr, tolerance);
-    const resultData = bisection.solve();
-    setResults(resultData);
-  };
+  // คำนวณผลลัพธ์
+  const bisection = new BisectionMethod(equation, xl, xr, tolerance);
+  const resultData = bisection.solve();
+  setResults(resultData);
+
+  // ส่งไป backend เฉพาะตอนกด Calculate
   fetch("http://localhost:5000/api/history", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    method: "Bisection",
-    equation: equation,
-  }),
-})
-  .then((res) => res.json())
-  .then((data) => {
-    console.log("History saved:", data);
-  });
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      method: "Bisection",
+      equation: equation,
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => console.log("History saved:", data))
+    .catch((error) => console.error("Error saving history:", error));
+};
 
 
   return (
