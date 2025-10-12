@@ -35,7 +35,20 @@ function NewtonRaphson() {
       setErrorMsg(error.message);
     }
   };
-
+fetch("http://localhost:5000/api/history", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    method: "NewtonRaphson",
+    equation: equation,
+  }),
+})
+  .then((res) => res.json())
+  .then((data) => {
+    console.log("History saved:", data);
+  });
   return (
     <>
       <Header />

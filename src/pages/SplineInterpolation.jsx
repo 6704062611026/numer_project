@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Plot from "react-plotly.js";
 import Header2 from "../components/Header2";
 
-// ฟังก์ชันสร้าง Natural Cubic Spline
+
 function computeSpline(points) {
   const n = points.length - 1;
   const a = points.map(p => p.y);

@@ -47,7 +47,20 @@ function SimpleTrapezoidalIntegration() {
     x: [a, a, b, b, a],
     y: [0, fa, fb, 0, 0],
   };
-
+fetch("http://localhost:5000/api/history", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    method: "Simpletrapezoidal",
+    equation: fx,
+  }),
+})
+  .then((res) => res.json())
+  .then((data) => {
+    console.log("History saved:", data);
+  });
   return (
     <>
       <Header4 />
