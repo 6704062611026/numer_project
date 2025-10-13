@@ -4,7 +4,7 @@ import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
 import invertMatrixStepwise from "../utils/MatrixInversionMethod";
 
-// ... import เดิม ๆ
+
 
 function MatrixInversion() {
   const [size, setSize] = useState("3");
@@ -12,7 +12,7 @@ function MatrixInversion() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
-  // ฟังก์ชันสร้าง matrix ว่าง
+
   const createEmptyMatrix = (n) => Array.from({ length: n }, () => Array(n).fill(0));
 
   const handleChangeA = (row, col, value) => {

@@ -9,25 +9,34 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-
-// POST - เพิ่มประวัติ
+// ✅ POST - เพิ่มประวัติ
 app.post("/api/history", (req, res) => {
-  const { method, matrixA, result } = req.body;
+  console.log("📦 Incoming POST /api/history:", req.body);
 
-  const sql = "INSERT INTO search_history (method, matrixA, result) VALUES (?, ?, ?)";
+  const { method, equation, matrixA, matrixB, result } = req.body;
+
+  const sql =
+    "INSERT INTO search_history (method, equation, matrixA, matrixB, result) VALUES (?, ?, ?, ?, ?)";
 
   db.query(
     sql,
-    [method, JSON.stringify(matrixA), JSON.stringify(result)],
+    [
+      method,
+      equation || null,
+      matrixA ? JSON.stringify(matrixA) : null,
+      matrixB ? JSON.stringify(matrixB) : null,
+      result ? JSON.stringify(result) : null,
+    ],
     (err, resultDb) => {
       if (err) {
-        console.error("Error inserting:", err);
-        return res.status(500).json({ error: "Database insert failed" });
+        console.error("Error inserting history:", err);
+        return res.status(500).json({ error: "Insert failed" });
       }
-      res.json({ id: resultDb.insertId, method });
+      res.json({ id: resultDb.insertId });
     }
   );
 });
+
 
 // GET - ดึงประวัติทั้งหมด
 app.get("/api/history", (req, res) => {
@@ -38,22 +47,19 @@ app.get("/api/history", (req, res) => {
   });
 });
 
-
-// ✅ DELETE - ลบประวัติทั้งหมด
+// DELETE - ลบประวัติทั้งหมด
 app.delete("/api/history", (req, res) => {
-  console.log("DELETE /api/history called"); // <-- เพิ่มบรรทัดนี้
+  console.log("DELETE /api/history called");
   const sql = "DELETE FROM search_history";
   db.query(sql, (err, result) => {
     if (err) {
       console.error("Error deleting history:", err);
       return res.status(500).json({ error: "Database delete failed" });
     }
-    console.log("Rows affected:", result.affectedRows); // <-- เพิ่มบรรทัดนี้
+    console.log("Rows affected:", result.affectedRows);
     res.json({ message: "History cleared successfully" });
   });
 });
-
-
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);

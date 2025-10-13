@@ -42,35 +42,53 @@ function History() {
     }
   };
 
-  const renderMatrix = (matrix) => {
-    if (!matrix) return null;
-    let parsedMatrix;
-    try {
-      parsedMatrix = JSON.parse(matrix); // แปลงจาก JSON string
-    } catch {
-      return <span>Invalid matrix</span>;
-    }
+const renderMatrix = (matrix) => {
+  if (!matrix) return null;
+  let parsedMatrix;
 
+  try {
+    parsedMatrix = JSON.parse(matrix);
+
+    // 🔁 ถ้ายังเป็น string อีกชั้น ให้ parse ซ้ำ
+    if (typeof parsedMatrix === "string") {
+      parsedMatrix = JSON.parse(parsedMatrix);
+    }
+  } catch (e) {
+    return <span>❌ JSON parse failed: {String(matrix)}</span>;
+  }
+
+  // ตรวจสอบว่าเป็น array 2 มิติจริงไหม
+  if (!Array.isArray(parsedMatrix) || !Array.isArray(parsedMatrix[0])) {
     return (
-      <table
-        border="1"
-        cellPadding="5"
-        style={{ borderCollapse: "collapse", margin: "0 auto" }}
-      >
-        <tbody>
-          {parsedMatrix.map((row, i) => (
-            <tr key={i}>
-              {row.map((val, j) => (
-                <td key={j} style={{ textAlign: "center" }}>
-                  {val}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div style={{ color: "black" }}>
+        {JSON.stringify(parsedMatrix)}
+      </div>
     );
-  };
+  }
+
+  return (
+    <table
+      border="1"
+      cellPadding="5"
+      style={{ borderCollapse: "collapse", margin: "0 auto" }}
+    >
+      <tbody>
+        {parsedMatrix.map((row, i) => (
+          <tr key={i}>
+            {row.map((val, j) => (
+              <td key={j} style={{ textAlign: "center" }}>
+                {val}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
+
+
+
 
   return (
     <>
@@ -136,22 +154,29 @@ function History() {
                   <td>{item.id}</td>
                   <td>{item.method}</td>
                   <td>
-                    {/* ถ้าเป็น Cholesky หรือ method ที่มี matrixA */}
-                    {item.matrixA ? (
-                      <div>
-                        <strong>Matrix A:</strong>
-                        {renderMatrix(item.matrixA)}
-                        {item.matrixB && (
-                          <>
-                            <strong>Matrix B:</strong>
-                            {renderMatrix(item.matrixB)}
-                          </>
-                        )}
-                      </div>
-                    ) : (
-                      item.equation // สำหรับ method ที่ใช้ equation
-                    )}
-                  </td>
+  {item.equation && (
+    <div>
+      <strong>Equation:</strong> {item.equation}
+    </div>
+  )}
+
+  {item.matrixA && (
+    <div style={{ marginTop: "0.5rem" }}>
+      <strong>Matrix A:</strong>
+      {renderMatrix(item.matrixA)}
+    </div>
+  )}
+
+  {item.matrixB && (
+    <div style={{ marginTop: "0.5rem" }}>
+      <strong>Matrix B:</strong>
+      {renderMatrix(item.matrixB)}
+    </div>
+  )}
+
+  {!item.equation && !item.matrixA && !item.matrixB && <span>-</span>}
+</td>
+
                   <td>
                     {new Date(item.created_at).toLocaleString("en-US", {
                       dateStyle: "short",
