@@ -1,9 +1,11 @@
+// pages/Graphical.jsx
+
 import React, { useState } from "react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Plot from "react-plotly.js";
 import Header from "../components/Header";
-import GraphicalMethod from "../utils/GraphicalMethod";
+import { evaluate } from "mathjs";
 
 function Graphical() {
   const [equation, setEquation] = useState("x^3 - x - 2");
@@ -13,6 +15,65 @@ function Graphical() {
   const [dataPoints, setDataPoints] = useState([]);
   const [estimatedRoot, setEstimatedRoot] = useState(null);
 
+  // ----- Math Utility Functions -----
+  const evaluateAt = (equation, x) => {
+    try {
+      return evaluate(equation, { x });
+    } catch (err) {
+      return NaN;
+    }
+  };
+
+  const generatePoints = (equation, xStart, xEnd, step = 0.1) => {
+    const points = [];
+    for (let x = xStart; x <= xEnd; x += step) {
+      const y = evaluateAt(equation, x);
+      points.push({
+        x: parseFloat(x.toFixed(6)),
+        y: parseFloat(y.toFixed(10)),
+      });
+    }
+    return points;
+  };
+
+  const findRootByZoomIn = (equation, xStart, xEnd, step = 0.1, tolerance = 1e-6, maxDepth = 10) => {
+    const recursiveSearch = (xStart, xEnd, step, depth) => {
+      let closestX = null;
+      let closestY = Infinity;
+
+      for (let x = xStart; x <= xEnd; x += step) {
+        const y = evaluateAt(equation, x);
+        if (!isNaN(y) && Math.abs(y) < Math.abs(closestY)) {
+          closestX = x;
+          closestY = y;
+        }
+      }
+
+      if (Math.abs(closestY) <= tolerance || depth >= maxDepth) {
+        return { x: parseFloat(closestX.toFixed(8)), y: parseFloat(closestY.toFixed(10)) };
+      }
+
+      const newStart = closestX - step;
+      const newEnd = closestX + step;
+      const newStep = step / 10;
+
+      return recursiveSearch(newStart, newEnd, newStep, depth + 1);
+    };
+
+    return recursiveSearch(xStart, xEnd, step, 0);
+  };
+
+  const appendErrorFromEstimatedRoot = (points, estimatedRoot) => {
+    return points.map((point) => {
+      const error = Math.abs((point.x - estimatedRoot) / estimatedRoot);
+      return {
+        ...point,
+        error: parseFloat(error.toFixed(6)),
+      };
+    });
+  };
+
+  // ----- Equation to LaTeX -----
   const mathjsToLatex = (expr) => {
     try {
       return expr
@@ -26,38 +87,35 @@ function Graphical() {
     }
   };
 
+  // ----- Calculate Handler -----
   const calculateGraphical = () => {
-  const tol = parseFloat(tolerance) || 0.000001;
-  const graphical = new GraphicalMethod(equation, xStart, xEnd, 0.1, tol);
+    const tol = parseFloat(tolerance) || 0.000001;
+    const rawPoints = generatePoints(equation, parseFloat(xStart), parseFloat(xEnd));
+    const estimated = findRootByZoomIn(equation, parseFloat(xStart), parseFloat(xEnd), 0.1, tol);
 
-  const rawPoints = graphical.generatePoints();
-  const estimated = graphical.findRootByZoomIn();
+    if (Math.abs(estimated.y) > tol) {
+      alert(`ไม่พบค่า f(x) ที่เข้าใกล้ 0 ภายใน tolerance ที่กำหนด`);
+      setDataPoints([]);
+      setEstimatedRoot(null);
+      return;
+    }
 
-  if (Math.abs(estimated.y) > tol) {
-    alert(`ไม่พบค่า f(x) ที่เข้าใกล้ 0 ภายใน tolerance ที่กำหนด`);
-    setDataPoints([]);
-    setEstimatedRoot(null);
-    return;
-  }
+    const withError = appendErrorFromEstimatedRoot(rawPoints, estimated.x);
+    setEstimatedRoot(estimated.x);
+    setDataPoints(withError);
 
-  const withError = graphical.appendErrorFromEstimatedRoot(rawPoints, estimated.x);
-  setEstimatedRoot(estimated.x);
-  setDataPoints(withError);
-
-  // ✅ ส่งไป backend เฉพาะตอนกด Calculate
-  fetch("http://localhost:5000/api/history", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      method: "Graphical",
-      equation: equation,
-    }),
-  })
-    .then((res) => res.json())
-    .then((data) => console.log("History saved:", data))
-    .catch((error) => console.error("Error saving history:", error));
-};
-
+    fetch("http://localhost:5000/api/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "Graphical",
+        equation: equation,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => console.log("History saved:", data))
+      .catch((error) => console.error("Error saving history:", error));
+  };
 
   return (
     <>
@@ -65,7 +123,6 @@ function Graphical() {
       <div className="App" style={{ padding: "1rem", maxWidth: 700, margin: "auto" }}>
         <h1 style={{ color: "#1e3a8a" }}>Graphical Method</h1>
 
-       
         <div
           style={{
             marginBottom: "1rem",
@@ -78,7 +135,6 @@ function Graphical() {
           <BlockMath math={`f(x) = ${mathjsToLatex(equation)}`} />
         </div>
 
-        
         <div style={{ marginBottom: "1rem" }}>
           <label>Equation:</label>
           <input
@@ -109,7 +165,7 @@ function Graphical() {
         </div>
 
         <div style={{ marginBottom: "1rem" }}>
-          <label>Error Tolerance (e.g. 0.000001):</label>
+          <label>Error Tolerance:</label>
           <input
             type="number"
             value={tolerance}
@@ -134,7 +190,6 @@ function Graphical() {
           Calculate
         </button>
 
-      
         {dataPoints.length > 0 && (
           <>
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>

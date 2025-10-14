@@ -3,13 +3,14 @@ import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header from "../components/Header";
 import Plot from "react-plotly.js";
-import OnePointMethod from "../utils/OnePointMethod";
+import { evaluate } from "mathjs";
 
 function OnePoint() {
   const [equation, setEquation] = useState("cos(x)");
   const [initialGuess, setInitialGuess] = useState(0.5);
   const [tolerance, setTolerance] = useState(0.000001);
   const [results, setResults] = useState([]);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const mathjsToLatex = (expr) => {
     try {
@@ -24,24 +25,54 @@ function OnePoint() {
     }
   };
 
+  const solveOnePoint = (eq, x0, tol, maxIter = 50) => {
+    const results = [];
+    let iter = 0;
+    let xOld = parseFloat(x0);
+    let xNew, error;
+
+    do {
+      xNew = evaluate(eq, { x: xOld });
+      error = Math.abs((xNew - xOld) / xNew);
+
+      results.push({
+        iteration: iter + 1,
+        xOld: xOld.toFixed(6),
+        xNew: xNew.toFixed(6),
+        error: error.toFixed(6),
+      });
+
+      xOld = xNew;
+      iter++;
+    } while (error > tol && iter < maxIter);
+
+    return results;
+  };
+
   const calculateOnePoint = () => {
-    const method = new OnePointMethod(equation, initialGuess, tolerance);
-    const resultData = method.solve();
-    setResults(resultData);
+    try {
+      setErrorMsg("");
+      const resultData = solveOnePoint(equation, initialGuess, tolerance);
+      setResults(resultData);
+    } catch (error) {
+      setErrorMsg("Invalid equation or input.");
+      setResults([]);
+    }
+
     fetch("http://localhost:5000/api/history", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    method: "OnePoint",
-    equation: equation,
-  }),
-})
-  .then((res) => res.json())
-  .then((data) => {
-    console.log("History saved:", data);
-  });
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        method: "OnePoint",
+        equation: equation,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("History saved:", data);
+      });
   };
 
   return (
@@ -104,6 +135,12 @@ function OnePoint() {
           Calculate
         </button>
 
+        {errorMsg && (
+          <div style={{ color: "red", marginTop: "1rem" }}>
+            <strong>Error:</strong> {errorMsg}
+          </div>
+        )}
+
         {results.length > 0 && (
           <>
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>
@@ -133,8 +170,9 @@ function OnePoint() {
 
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Results</h2>
             <p style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>
-            <p>Estimated Root: <strong>{results[results.length - 1]?.xNew}</strong>
-            </p></p> 
+              Estimated Root: <strong>{results[results.length - 1]?.xNew}</strong>
+            </p>
+
             <table border="1" cellPadding="8" style={{ marginTop: "1rem", width: "100%" }}>
               <thead style={{ backgroundColor: "#e0e7ff" }}>
                 <tr>

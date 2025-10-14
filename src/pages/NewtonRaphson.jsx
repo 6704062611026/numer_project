@@ -3,7 +3,7 @@ import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header from "../components/Header";
 import Plot from "react-plotly.js";
-import NewtonRaphsonMethod from "../utils/NewtonRaphsonMethod";
+import { evaluate, parse, derivative } from "mathjs";
 
 function NewtonRaphson() {
   const [equation, setEquation] = useState("x^3 - x - 2");
@@ -25,29 +25,64 @@ function NewtonRaphson() {
     }
   };
 
+  const solveNewtonRaphson = (eq, x0, tol, maxIter = 50) => {
+    const expr = parse(eq);
+    const diffExpr = derivative(expr, "x");
+
+    const results = [];
+    let iter = 0;
+    let xOld = parseFloat(x0);
+    let xNew, fx, fpx, error;
+
+    do {
+      fx = expr.evaluate({ x: xOld });
+      fpx = diffExpr.evaluate({ x: xOld });
+
+      if (fpx === 0) {
+        throw new Error("Derivative is zero. Cannot proceed.");
+      }
+
+      xNew = xOld - fx / fpx;
+      error = Math.abs((xNew - xOld) / xNew);
+
+      results.push({
+        iteration: iter + 1,
+        xOld: xOld.toFixed(6),
+        fx: fx.toFixed(6),
+        fpx: fpx.toFixed(6),
+        xNew: xNew.toFixed(6),
+        error: error.toFixed(6),
+      });
+
+      xOld = xNew;
+      iter++;
+    } while (error > tol && iter < maxIter);
+
+    return results;
+  };
+
   const calculateNewtonRaphson = () => {
     try {
       setErrorMsg("");
-      const method = new NewtonRaphsonMethod(equation, x0, tolerance);
-      const resultData = method.solve();
+      const resultData = solveNewtonRaphson(equation, x0, tolerance);
       setResults(resultData);
     } catch (error) {
       setErrorMsg(error.message);
+      setResults([]);
     }
+
     fetch("http://localhost:5000/api/history", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    method: "NewtonRaphson",
-    equation: equation,
-  }),
-})
-  .then((res) => res.json())
-  .then((data) => {
-    console.log("History saved:", data);
-  });
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "NewtonRaphson",
+        equation: equation,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("History saved:", data);
+      });
   };
 
   return (
@@ -56,13 +91,15 @@ function NewtonRaphson() {
       <div className="App" style={{ padding: "1rem", maxWidth: 700, margin: "auto" }}>
         <h1 style={{ color: "#1e3a8a" }}>Newton-Raphson Method</h1>
 
-        <div style={{
-          marginBottom: "1rem",
-          backgroundColor: "#f0f4ff",
-          padding: "1rem",
-          borderRadius: "8px",
-          border: "1px solid #cbd5e1",
-        }}>
+        <div
+          style={{
+            marginBottom: "1rem",
+            backgroundColor: "#f0f4ff",
+            padding: "1rem",
+            borderRadius: "8px",
+            border: "1px solid #cbd5e1",
+          }}
+        >
           <BlockMath math={`f(x) = ${mathjsToLatex(equation)}`} />
         </div>
 
@@ -116,7 +153,6 @@ function NewtonRaphson() {
           </div>
         )}
 
- 
         {results.length > 0 && (
           <>
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>
@@ -144,8 +180,9 @@ function NewtonRaphson() {
 
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Results</h2>
             <p style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>
-            <p>Estimated Root: <strong>{results[results.length - 1]?.xNew}</strong>
-            </p></p> 
+              Estimated Root: <strong>{results[results.length - 1]?.xNew}</strong>
+            </p>
+
             <table border="1" cellPadding="8" style={{ marginTop: "1rem", width: "100%" }}>
               <thead style={{ backgroundColor: "#e0e7ff" }}>
                 <tr>

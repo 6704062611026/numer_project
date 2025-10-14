@@ -2,7 +2,66 @@ import React, { useState } from "react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
-import solveCholesky from "../utils/CholeskyDecompositionMethod";
+
+// ✅ ฟังก์ชันช่วย format ตัวเลข
+function formatNumber(x) {
+  if (Math.abs(x) < 1e-10) return "0";
+  if (Number.isInteger(x)) return String(x);
+  return parseFloat(x.toFixed(6)).toString();
+}
+
+// ✅ รวม solveCholesky มาไว้ในไฟล์นี้
+function solveCholesky(A) {
+  const n = A.length;
+  const L = Array.from({ length: n }, () => Array(n).fill(0));
+  const steps = [];
+
+  // ตรวจสอบว่า symmetric หรือไม่
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      if (A[i][j] !== A[j][i]) {
+        return { error: "Matrix A is not symmetric. Cholesky cannot be applied." };
+      }
+    }
+  }
+
+  try {
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j <= i; j++) {
+        let sum = 0;
+        for (let k = 0; k < j; k++) {
+          sum += L[i][k] * L[j][k];
+        }
+
+        if (i === j) {
+          const val = A[i][i] - sum;
+          if (val <= 0) {
+            return { error: "Matrix is not positive definite. Cholesky failed." };
+          }
+          L[i][j] = Math.sqrt(val);
+          steps.push(
+            `L_{${i + 1}${j + 1}} = \\sqrt{A_{${i + 1}${i + 1}} - \\sum_{k=1}^{${j}} L_{${i + 1}k}^2} = \\sqrt{${A[i][i]} - ${formatNumber(sum)}} = ${formatNumber(L[i][j])}`
+          );
+        } else {
+          L[i][j] = (A[i][j] - sum) / L[j][j];
+          steps.push(
+            `L_{${i + 1}${j + 1}} = \\frac{A_{${i + 1}${j + 1}} - \\sum_{k=1}^{${j}} L_{${i + 1}k}L_{${j + 1}k}}{L_{${j + 1}${j + 1}}} = \\frac{${A[i][j]} - ${formatNumber(sum)}}{${formatNumber(
+              L[j][j]
+            )}} = ${formatNumber(L[i][j])}`
+          );
+        }
+      }
+    }
+  } catch (e) {
+    return { error: "Error computing Cholesky decomposition." };
+  }
+
+  const Llatex = `\\begin{pmatrix}${L.map(r => r.map(formatNumber).join("&")).join("\\\\")}\\end{pmatrix}`;
+  const LT = L[0].map((_, i) => L.map(row => row[i]));
+  const LTlatex = `\\begin{pmatrix}${LT.map(r => r.map(formatNumber).join("&")).join("\\\\")}\\end{pmatrix}`;
+
+  return { steps, Llatex, LTlatex };
+}
 
 function CholeskyDecomposition() {
   const [size, setSize] = useState("3");
@@ -19,48 +78,49 @@ function CholeskyDecomposition() {
   };
 
   const handleCreateOrSolve = () => {
-  const n = parseInt(size);
-  if (isNaN(n) || n < 2) {
-    setError("Matrix size must be ≥ 2");
-    return;
-  }
+    const n = parseInt(size);
+    if (isNaN(n) || n < 2) {
+      setError("Matrix size must be ≥ 2");
+      return;
+    }
 
-  setError("");
+    setError("");
 
-  if (matrixA.length !== n) {
-    setMatrixA(createEmptyMatrix(n));
-    setResult(null);
-    return;
-  }
+    if (matrixA.length !== n) {
+      setMatrixA(createEmptyMatrix(n));
+      setResult(null);
+      return;
+    }
 
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-      if (matrixA[i][j] === "" || matrixA[i][j] === undefined || Number.isNaN(matrixA[i][j])) {
-        setError("Please fill all entries in Matrix A.");
-        return;
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (
+          matrixA[i][j] === "" ||
+          matrixA[i][j] === undefined ||
+          Number.isNaN(matrixA[i][j])
+        ) {
+          setError("Please fill all entries in Matrix A.");
+          return;
+        }
       }
     }
-  }
 
-  const res = solveCholesky(matrixA);
-  setResult(res);
+    const res = solveCholesky(matrixA);
+    setResult(res);
 
-  // ✅ ส่ง matrix + result ไป backend
-  fetch("http://localhost:5000/api/history", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      method: "Cholesky",
-      matrixA: JSON.stringify(matrixA),  // แปลงเป็น string ก่อนเก็บ
-      result: JSON.stringify(res),         // result จาก solveCholesky
-    }),
-  })
-    .then((r) => r.json())
-    .then((data) => alert("History saved successfully!"))
-    .catch((err) => alert("Error saving history: " + err));
-};
-
-
+    fetch("http://localhost:5000/api/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "Cholesky",
+        matrixA: JSON.stringify(matrixA),
+        result: JSON.stringify(res),
+      }),
+    })
+      .then((r) => r.json())
+      .then((data) => alert("History saved successfully!"))
+      .catch((err) => alert("Error saving history: " + err));
+  };
 
   return (
     <>
@@ -90,9 +150,7 @@ function CholeskyDecomposition() {
                       key={colIndex}
                       type="number"
                       value={value}
-                      onChange={(e) =>
-                        handleChangeA(rowIndex, colIndex, e.target.value)
-                      }
+                      onChange={(e) => handleChangeA(rowIndex, colIndex, e.target.value)}
                       style={{
                         width: "70px",
                         margin: "4px",
@@ -119,9 +177,7 @@ function CholeskyDecomposition() {
               marginTop: "1rem",
             }}
           >
-            {matrixA.length === parseInt(size)
-              ? "Decompose"
-              : "Create Matrix"}
+            {matrixA.length === parseInt(size) ? "Decompose" : "Create Matrix"}
           </button>
         </div>
 

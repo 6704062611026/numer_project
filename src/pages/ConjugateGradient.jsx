@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
-import solveConjugateGradient from "../utils/ConjugateGradientMethod";
 
 function ConjugateGradient() {
   const [inputSize, setInputSize] = useState("3");
@@ -25,6 +24,50 @@ function ConjugateGradient() {
     const newMatrix = [...matrixB];
     newMatrix[row] = parseFloat(value);
     setMatrixB(newMatrix);
+  };
+
+  const dotProduct = (a, b) => a.reduce((sum, val, i) => sum + val * b[i], 0);
+  const matrixVectorMultiply = (A, x) => A.map(row => dotProduct(row, x));
+  const vectorSubtract = (a, b) => a.map((v, i) => v - b[i]);
+  const vectorAdd = (a, b) => a.map((v, i) => v + b[i]);
+  const scalarMultiply = (v, scalar) => v.map(val => val * scalar);
+
+  const solveConjugateGradient = (A, b, tol = 1e-8, maxIter = 100) => {
+    const n = b.length;
+    let x = Array(n).fill(0); // เริ่มต้นด้วย x0 = 0
+    let r = vectorSubtract(b, matrixVectorMultiply(A, x));
+    let p = [...r];
+    let rsOld = dotProduct(r, r);
+    const steps = [];
+
+    for (let iter = 0; iter < maxIter; iter++) {
+      const Ap = matrixVectorMultiply(A, p);
+      const alpha = rsOld / dotProduct(p, Ap);
+      x = vectorAdd(x, scalarMultiply(p, alpha));
+      r = vectorSubtract(r, scalarMultiply(Ap, alpha));
+
+      const rsNew = dotProduct(r, r);
+      const beta = rsNew / rsOld;
+
+      steps.push({
+        iteration: iter + 1,
+        alpha,
+        beta,
+        x: `[${x.map(v => v.toFixed(6)).join(", ")}]`,
+        r: `[${r.map(v => v.toFixed(6)).join(", ")}]`,
+        p: `[${p.map(v => v.toFixed(6)).join(", ")}]`,
+      });
+
+      if (Math.sqrt(rsNew) < tol) break;
+
+      p = vectorAdd(r, scalarMultiply(p, beta));
+      rsOld = rsNew;
+    }
+
+    return {
+      steps,
+      solution: x,
+    };
   };
 
   const handleSolve = () => {

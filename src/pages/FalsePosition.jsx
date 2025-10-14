@@ -3,7 +3,60 @@ import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header from "../components/Header";
 import Plot from "react-plotly.js";
-import FalsePositionMethod from "../utils/FalsePositionMethod"; 
+import { evaluate } from "mathjs"; // 👈 เพิ่มมาจาก utils เดิม
+
+// ✅ ย้าย FalsePositionMethod มาไว้ในไฟล์นี้
+class FalsePositionMethod {
+  constructor(equation, xl, xr, tolerance, maxIterations = 50) {
+    this.equation = equation;
+    this.xl = parseFloat(xl);
+    this.xr = parseFloat(xr);
+    this.tolerance = parseFloat(tolerance);
+    this.maxIterations = maxIterations;
+    this.results = [];
+  }
+
+  evaluateAt(x) {
+    return evaluate(this.equation, { x });
+  }
+
+  solve() {
+    let iter = 0;
+    let xL = this.xl;
+    let xR = this.xr;
+    let xm, fxl, fxr, fxm, error;
+
+    this.results = [];
+
+    do {
+      fxl = this.evaluateAt(xL);
+      fxr = this.evaluateAt(xR);
+      xm = (xL * fxr - xR * fxl) / (fxr - fxl);
+      fxm = this.evaluateAt(xm);
+
+      if (fxm * fxr < 0) {
+        xL = xm;
+      } else {
+        xR = xm;
+      }
+
+      error = Math.abs((xR - xL) / xm);
+
+      this.results.push({
+        iteration: iter + 1,
+        xL: xL.toFixed(6),
+        xR: xR.toFixed(6),
+        xM: xm.toFixed(6),
+        fXM: fxm.toFixed(6),
+        error: error.toFixed(6),
+      });
+
+      iter++;
+    } while (error > this.tolerance && iter < this.maxIterations);
+
+    return this.results;
+  }
+}
 
 function FalsePosition() {
   const [equation, setEquation] = useState("43*x^9");
@@ -29,20 +82,21 @@ function FalsePosition() {
     const method = new FalsePositionMethod(equation, xl, xr, tolerance);
     const resultData = method.solve();
     setResults(resultData);
+
     fetch("http://localhost:5000/api/history", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    method: "FalsePosition",
-    equation: equation,
-  }),
-})
-  .then((res) => res.json())
-  .then((data) => {
-    console.log("History saved:", data);
-  });
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        method: "FalsePosition",
+        equation: equation,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("History saved:", data);
+      });
   };
 
   return (
@@ -51,7 +105,6 @@ function FalsePosition() {
       <div className="App" style={{ padding: "1rem", maxWidth: 700, margin: "auto" }}>
         <h1 style={{ color: "#1e3a8a" }}>False Position Method</h1>
 
-        {/* Equation Preview */}
         <div style={{
           marginBottom: "1rem",
           backgroundColor: "#f0f4ff",
@@ -116,7 +169,6 @@ function FalsePosition() {
           Calculate
         </button>
 
-       
         {results.length > 0 && (
           <>
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>
@@ -154,8 +206,8 @@ function FalsePosition() {
 
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Results</h2>
             <p style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>
-            <p>Estimated Root: <strong>{results[results.length - 1]?.xM}</strong>
-            </p></p> 
+              Estimated Root: <strong>{results[results.length - 1]?.xM}</strong>
+            </p>
             <table border="1" cellPadding="8" style={{ marginTop: "1rem", width: "100%" }}>
               <thead style={{ backgroundColor: "#e0e7ff" }}>
                 <tr>

@@ -3,7 +3,7 @@ import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header from "../components/Header";
 import Plot from "react-plotly.js";
-import SecantMethod from "../utils/SecantMethod";
+import { evaluate } from "mathjs";
 
 function Secant() {
   const [equation, setEquation] = useState("x^3 - x - 2");
@@ -26,29 +26,66 @@ function Secant() {
     }
   };
 
+  const solveSecant = (eq, x0, x1, tol, maxIter = 50) => {
+    const results = [];
+    let iter = 0;
+    let xOld = parseFloat(x0);
+    let xCurr = parseFloat(x1);
+    let xNew, fxOld, fxCurr, error;
+
+    do {
+      fxOld = evaluate(eq, { x: xOld });
+      fxCurr = evaluate(eq, { x: xCurr });
+
+      if (fxCurr - fxOld === 0) {
+        throw new Error("Division by zero in Secant formula.");
+      }
+
+      xNew = xCurr - (fxCurr * (xCurr - xOld)) / (fxCurr - fxOld);
+      error = Math.abs((xNew - xCurr) / xNew);
+
+      results.push({
+        iteration: iter + 1,
+        xOld: xOld.toFixed(6),
+        xCurr: xCurr.toFixed(6),
+        fxOld: fxOld.toFixed(6),
+        fxCurr: fxCurr.toFixed(6),
+        xNew: xNew.toFixed(6),
+        error: error.toFixed(6),
+      });
+
+      xOld = xCurr;
+      xCurr = xNew;
+      iter++;
+    } while (error > tol && iter < maxIter);
+
+    return results;
+  };
+
   const calculateSecant = () => {
     try {
       setErrorMsg("");
-      const method = new SecantMethod(equation, x0, x1, tolerance);
-      const resultData = method.solve();
+      const resultData = solveSecant(equation, x0, x1, tolerance);
       setResults(resultData);
     } catch (error) {
       setErrorMsg(error.message);
+      setResults([]);
     }
+
     fetch("http://localhost:5000/api/history", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    method: "Secant",
-    equation: equation,
-  }),
-})
-  .then((res) => res.json())
-  .then((data) => {
-    console.log("History saved:", data);
-  });
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        method: "Secant",
+        equation: equation,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("History saved:", data);
+      });
   };
 
   return (
@@ -57,7 +94,6 @@ function Secant() {
       <div className="App" style={{ padding: "1rem", maxWidth: 700, margin: "auto" }}>
         <h1 style={{ color: "#1e3a8a" }}>Secant Method</h1>
 
-        {/* แสดงสมการ */}
         <div style={{
           marginBottom: "1rem",
           backgroundColor: "#f0f4ff",
@@ -128,7 +164,6 @@ function Secant() {
           </div>
         )}
 
-        {/* ผลลัพธ์ */}
         {results.length > 0 && (
           <>
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Graph</h2>
@@ -156,8 +191,9 @@ function Secant() {
 
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Results</h2>
             <p style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>
-            <p>Estimated Root: <strong>{results[results.length - 1]?.xNew}</strong>
-            </p></p> 
+              Estimated Root: <strong>{results[results.length - 1]?.xNew}</strong>
+            </p>
+
             <table border="1" cellPadding="8" style={{ marginTop: "1rem", width: "100%" }}>
               <thead style={{ backgroundColor: "#e0e7ff" }}>
                 <tr>
