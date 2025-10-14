@@ -1,4 +1,3 @@
-// src/utils/NewtonRaphsonMethod.js
 import { derivative, evaluate, parse } from "mathjs";
 
 class NewtonRaphsonMethod {
