@@ -3,13 +3,68 @@ import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header from "../components/Header";
 import Plot from "react-plotly.js";
-import BisectionMethod from "../utils/BisectionMethod"; 
+import { evaluate } from "mathjs";
+
+// ✅ class BisectionMethod ย้ายมาไว้ในไฟล์นี้
+class BisectionMethod {
+  constructor(equation, xl, xr, tolerance, maxIterations = 50) {
+    this.equation = equation;
+    this.xl = parseFloat(xl);
+    this.xr = parseFloat(xr);
+    this.tolerance = parseFloat(tolerance);
+    this.maxIterations = maxIterations;
+    this.results = [];
+  }
+
+  evaluateAt(x) {
+    return evaluate(this.equation, { x });
+  }
+
+  solve() {
+    let iter = 0;
+    let xL = this.xl;
+    let xR = this.xr;
+    let xm, fxl, fxr, fxm, error;
+
+    this.results = [];
+
+    do {
+      xm = (xL + xR) / 2;
+      fxl = this.evaluateAt(xL);
+      fxr = this.evaluateAt(xR);
+      fxm = this.evaluateAt(xm);
+
+      if (fxm * fxr < 0) {
+        xL = xm;
+      } else {
+        xR = xm;
+      }
+
+      error = Math.abs((xR - xL) / xm);
+
+      this.results.push({
+        iteration: iter + 1,
+        xL: xL.toFixed(6),
+        xR: xR.toFixed(6),
+        xM: xm.toFixed(6),
+        fXM: fxm.toFixed(6),
+        error: error.toFixed(6),
+      });
+
+      iter++;
+    } while (error > this.tolerance && iter < this.maxIterations);
+
+    return this.results;
+  }
+}
+
 function Bisection() {
-  const [equation, setEquation] = useState("43*x^9");
+  const [equation, setEquation] = useState("x^3 - x - 2");
   const [xl, setXl] = useState(1);
   const [xr, setXr] = useState(2);
   const [tolerance, setTolerance] = useState(0.000001);
   const [results, setResults] = useState([]);
+
   const mathjsToLatex = (expr) => {
     try {
       return expr
@@ -24,25 +79,22 @@ function Bisection() {
   };
 
   const calculateBisection = () => {
-  // คำนวณผลลัพธ์
-  const bisection = new BisectionMethod(equation, xl, xr, tolerance);
-  const resultData = bisection.solve();
-  setResults(resultData);
+    const bisection = new BisectionMethod(equation, xl, xr, tolerance);
+    const resultData = bisection.solve();
+    setResults(resultData);
 
-  // ส่งไป backend เฉพาะตอนกด Calculate
-  fetch("http://localhost:5000/api/history", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      method: "Bisection",
-      equation: equation,
-    }),
-  })
-    .then((res) => res.json())
-    .then((data) => console.log("History saved:", data))
-    .catch((error) => console.error("Error saving history:", error));
-};
-
+    fetch("http://localhost:5000/api/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "Bisection",
+        equation: equation,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => console.log("History saved:", data))
+      .catch((error) => console.error("Error saving history:", error));
+  };
 
   return (
     <>
@@ -50,14 +102,15 @@ function Bisection() {
       <div className="App" style={{ padding: "1rem", maxWidth: 700, margin: "auto" }}>
         <h1 style={{ color: "#1e3a8a" }}>Bisection Method</h1>
 
-
-        <div style={{
-          marginBottom: "1rem",
-          backgroundColor: "#f0f4ff",
-          padding: "1rem",
-          borderRadius: "8px",
-          border: "1px solid #cbd5e1",
-        }}>
+        <div
+          style={{
+            marginBottom: "1rem",
+            backgroundColor: "#f0f4ff",
+            padding: "1rem",
+            borderRadius: "8px",
+            border: "1px solid #cbd5e1",
+          }}
+        >
           <BlockMath math={`f(x) = ${mathjsToLatex(equation)}`} />
         </div>
 
@@ -66,7 +119,13 @@ function Bisection() {
           <input
             value={equation}
             onChange={(e) => setEquation(e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", fontSize: "1rem", borderRadius: 4, border: "1px solid #ccc" }}
+            style={{
+              width: "100%",
+              padding: "0.5rem",
+              fontSize: "1rem",
+              borderRadius: 4,
+              border: "1px solid #ccc",
+            }}
           />
         </div>
 
@@ -76,7 +135,12 @@ function Bisection() {
             type="number"
             value={xl}
             onChange={(e) => setXl(e.target.value)}
-            style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc" }}
+            style={{
+              padding: "0.4rem",
+              width: "100%",
+              borderRadius: 4,
+              border: "1px solid #ccc",
+            }}
           />
         </div>
 
@@ -86,7 +150,12 @@ function Bisection() {
             type="number"
             value={xr}
             onChange={(e) => setXr(e.target.value)}
-            style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc" }}
+            style={{
+              padding: "0.4rem",
+              width: "100%",
+              borderRadius: 4,
+              border: "1px solid #ccc",
+            }}
           />
         </div>
 
@@ -96,7 +165,12 @@ function Bisection() {
             type="number"
             value={tolerance}
             onChange={(e) => setTolerance(e.target.value)}
-            style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc" }}
+            style={{
+              padding: "0.4rem",
+              width: "100%",
+              borderRadius: 4,
+              border: "1px solid #ccc",
+            }}
           />
         </div>
 
@@ -114,7 +188,6 @@ function Bisection() {
         >
           Calculate
         </button>
-
 
         {results.length > 0 && (
           <>
@@ -153,8 +226,8 @@ function Bisection() {
 
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Results</h2>
             <p style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>
-            <p>Estimated Root: <strong>{results[results.length - 1]?.xM}</strong>
-            </p></p> 
+              Estimated Root: <strong>{results[results.length - 1]?.xM}</strong>
+            </p>
 
             <table border="1" cellPadding="8" style={{ marginTop: "1rem", width: "100%" }}>
               <thead style={{ backgroundColor: "#e0e7ff" }}>
