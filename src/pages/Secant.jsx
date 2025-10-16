@@ -5,6 +5,58 @@ import Header from "../components/Header";
 import Plot from "react-plotly.js";
 import { evaluate } from "mathjs";
 
+// ✅ Secant Method Class
+class SecantMethod {
+  constructor(equation, x0, x1, tolerance, maxIterations = 50) {
+    this.equation = equation;
+    this.x0 = parseFloat(x0);
+    this.x1 = parseFloat(x1);
+    this.tolerance = parseFloat(tolerance);
+    this.maxIterations = maxIterations;
+    this.results = [];
+  }
+
+  evaluateAt(x) {
+    return evaluate(this.equation, { x });
+  }
+
+  solve() {
+    let x0 = this.x0;
+    let x1 = this.x1;
+    let iter = 0;
+    let error = 1;
+    this.results = [];
+
+    while (error > this.tolerance && iter < this.maxIterations) {
+      const fx0 = this.evaluateAt(x0);
+      const fx1 = this.evaluateAt(x1);
+
+      if (fx1 - fx0 === 0) {
+        throw new Error("Division by zero encountered.");
+      }
+
+      const x2 = x1 - (fx1 * (x1 - x0)) / (fx1 - fx0);
+      error = Math.abs((x2 - x1) / x2);
+
+      this.results.push({
+        iteration: iter + 1,
+        x0: x0.toFixed(6),
+        x1: x1.toFixed(6),
+        x2: x2.toFixed(6),
+        fX0: fx0.toFixed(6),
+        fX1: fx1.toFixed(6),
+        error: error.toFixed(6),
+      });
+
+      x0 = x1;
+      x1 = x2;
+      iter++;
+    }
+
+    return this.results;
+  }
+}
+
 function Secant() {
   const [equation, setEquation] = useState("x^3 - x - 2");
   const [x0, setX0] = useState(1);
@@ -14,78 +66,36 @@ function Secant() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const mathjsToLatex = (expr) => {
-    try {
-      return expr
-        .replace(/\*/g, " \\cdot ")
-        .replace(/\^([0-9]+)/g, "^{$1}")
-        .replace(/sin/g, "\\sin")
-        .replace(/cos/g, "\\cos")
-        .replace(/tan/g, "\\tan");
-    } catch {
-      return expr;
-    }
-  };
-
-  const solveSecant = (eq, x0, x1, tol, maxIter = 50) => {
-    const results = [];
-    let iter = 0;
-    let xOld = parseFloat(x0);
-    let xCurr = parseFloat(x1);
-    let xNew, fxOld, fxCurr, error;
-
-    do {
-      fxOld = evaluate(eq, { x: xOld });
-      fxCurr = evaluate(eq, { x: xCurr });
-
-      if (fxCurr - fxOld === 0) {
-        throw new Error("Division by zero in Secant formula.");
-      }
-
-      xNew = xCurr - (fxCurr * (xCurr - xOld)) / (fxCurr - fxOld);
-      error = Math.abs((xNew - xCurr) / xNew);
-
-      results.push({
-        iteration: iter + 1,
-        xOld: xOld.toFixed(6),
-        xCurr: xCurr.toFixed(6),
-        fxOld: fxOld.toFixed(6),
-        fxCurr: fxCurr.toFixed(6),
-        xNew: xNew.toFixed(6),
-        error: error.toFixed(6),
-      });
-
-      xOld = xCurr;
-      xCurr = xNew;
-      iter++;
-    } while (error > tol && iter < maxIter);
-
-    return results;
+    return expr
+      .replace(/\*/g, " \\cdot ")
+      .replace(/\^([0-9]+)/g, "^{$1}")
+      .replace(/sin/g, "\\sin")
+      .replace(/cos/g, "\\cos")
+      .replace(/tan/g, "\\tan")
+      .replace(/exp/g, "\\exp");
   };
 
   const calculateSecant = () => {
     try {
       setErrorMsg("");
-      const resultData = solveSecant(equation, x0, x1, tolerance);
-      setResults(resultData);
-    } catch (error) {
-      setErrorMsg(error.message);
+      const secant = new SecantMethod(equation, x0, x1, tolerance);
+      const data = secant.solve();
+      setResults(data);
+
+      fetch("http://localhost:5000/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          method: "Secant",
+          equation,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => console.log("History saved:", data));
+    } catch (err) {
+      setErrorMsg(err.message || "Invalid input");
       setResults([]);
     }
-
-    fetch("http://localhost:5000/api/history", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        method: "Secant",
-        equation: equation,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("History saved:", data);
-      });
   };
 
   return (
@@ -119,7 +129,7 @@ function Secant() {
             type="number"
             value={x0}
             onChange={(e) => setX0(e.target.value)}
-            style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc" }}
+            style={{ width: "100%", padding: "0.4rem", borderRadius: 4, border: "1px solid #ccc" }}
           />
         </div>
 
@@ -129,7 +139,7 @@ function Secant() {
             type="number"
             value={x1}
             onChange={(e) => setX1(e.target.value)}
-            style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc" }}
+            style={{ width: "100%", padding: "0.4rem", borderRadius: 4, border: "1px solid #ccc" }}
           />
         </div>
 
@@ -139,7 +149,7 @@ function Secant() {
             type="number"
             value={tolerance}
             onChange={(e) => setTolerance(e.target.value)}
-            style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc" }}
+            style={{ width: "100%", padding: "0.4rem", borderRadius: 4, border: "1px solid #ccc" }}
           />
         </div>
 
@@ -172,26 +182,28 @@ function Secant() {
                 data={[
                   {
                     x: results.map((row) => row.iteration),
-                    y: results.map((row) => parseFloat(row.xNew)),
+                    y: results.map((row) => parseFloat(row.x2)),
                     type: "scatter",
                     mode: "lines+markers",
-                    name: "x (Root)",
+                    name: "x₂ (next guess)",
                     marker: { color: "blue" },
                   },
                 ]}
                 layout={{
-                  title: "Secant Method: x over Iterations",
+                  title: "Secant Method Iteration",
                   xaxis: { title: "Iteration" },
                   yaxis: { title: "x" },
+                  autosize: true,
                   height: 400,
                   width: 600,
                 }}
+                style={{ margin: "0 auto" }}
               />
             </div>
 
             <h2 style={{ marginTop: "2rem", color: "#1e3a8a" }}>Results</h2>
             <p style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>
-              Estimated Root: <strong>{results[results.length - 1]?.xNew}</strong>
+              Estimated Root: <strong>{results[results.length - 1]?.x2}</strong>
             </p>
 
             <table border="1" cellPadding="8" style={{ marginTop: "1rem", width: "100%" }}>
@@ -200,9 +212,9 @@ function Secant() {
                   <th>Iteration</th>
                   <th>x₀</th>
                   <th>x₁</th>
+                  <th>x₂</th>
                   <th>f(x₀)</th>
                   <th>f(x₁)</th>
-                  <th>x<sub>new</sub></th>
                   <th>Error</th>
                 </tr>
               </thead>
@@ -210,11 +222,11 @@ function Secant() {
                 {results.map((row, index) => (
                   <tr key={index}>
                     <td>{row.iteration}</td>
-                    <td>{row.xOld}</td>
-                    <td>{row.xCurr}</td>
-                    <td>{row.fxOld}</td>
-                    <td>{row.fxCurr}</td>
-                    <td>{row.xNew}</td>
+                    <td>{row.x0}</td>
+                    <td>{row.x1}</td>
+                    <td>{row.x2}</td>
+                    <td>{row.fX0}</td>
+                    <td>{row.fX1}</td>
                     <td>{row.error}</td>
                   </tr>
                 ))}

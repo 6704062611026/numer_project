@@ -5,6 +5,45 @@ import Header from "../components/Header";
 import Plot from "react-plotly.js";
 import { evaluate } from "mathjs";
 
+// ✅ class OnePointMethod (OOP style)
+class OnePointMethod {
+  constructor(equation, initialGuess, tolerance, maxIterations = 50) {
+    this.equation = equation;
+    this.x0 = parseFloat(initialGuess);
+    this.tolerance = parseFloat(tolerance);
+    this.maxIterations = maxIterations;
+    this.results = [];
+  }
+
+  solve() {
+    let xOld = this.x0;
+    let iter = 0;
+    let xNew, error;
+
+    do {
+      try {
+        xNew = evaluate(this.equation, { x: xOld });
+        error = Math.abs((xNew - xOld) / xNew);
+      } catch (err) {
+        throw new Error("Invalid equation or evaluation error");
+      }
+
+      this.results.push({
+        iteration: iter + 1,
+        xOld: parseFloat(xOld.toFixed(6)),
+        xNew: parseFloat(xNew.toFixed(6)),
+        error: parseFloat(error.toFixed(6)),
+      });
+
+      xOld = xNew;
+      iter++;
+    } while (error > this.tolerance && iter < this.maxIterations);
+
+    return this.results;
+  }
+}
+
+// ✅ React Component
 function OnePoint() {
   const [equation, setEquation] = useState("cos(x)");
   const [initialGuess, setInitialGuess] = useState(0.5);
@@ -19,60 +58,35 @@ function OnePoint() {
         .replace(/\^([0-9]+)/g, "^{$1}")
         .replace(/sin/g, "\\sin")
         .replace(/cos/g, "\\cos")
-        .replace(/tan/g, "\\tan");
+        .replace(/tan/g, "\\tan")
+        .replace(/exp/g, "\\exp");
     } catch {
       return expr;
     }
   };
 
-  const solveOnePoint = (eq, x0, tol, maxIter = 50) => {
-    const results = [];
-    let iter = 0;
-    let xOld = parseFloat(x0);
-    let xNew, error;
-
-    do {
-      xNew = evaluate(eq, { x: xOld });
-      error = Math.abs((xNew - xOld) / xNew);
-
-      results.push({
-        iteration: iter + 1,
-        xOld: xOld.toFixed(6),
-        xNew: xNew.toFixed(6),
-        error: error.toFixed(6),
-      });
-
-      xOld = xNew;
-      iter++;
-    } while (error > tol && iter < maxIter);
-
-    return results;
-  };
-
   const calculateOnePoint = () => {
     try {
       setErrorMsg("");
-      const resultData = solveOnePoint(equation, initialGuess, tolerance);
-      setResults(resultData);
+      const onePoint = new OnePointMethod(equation, initialGuess, tolerance);
+      const data = onePoint.solve();
+      setResults(data);
+
+      // บันทึกประวัติ (optional)
+      fetch("http://localhost:5000/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          method: "OnePoint",
+          equation,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => console.log("History saved:", data));
     } catch (error) {
-      setErrorMsg("Invalid equation or input.");
+      setErrorMsg("⚠️ Invalid equation or input.");
       setResults([]);
     }
-
-    fetch("http://localhost:5000/api/history", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        method: "OnePoint",
-        equation: equation,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("History saved:", data);
-      });
   };
 
   return (
@@ -137,7 +151,7 @@ function OnePoint() {
 
         {errorMsg && (
           <div style={{ color: "red", marginTop: "1rem" }}>
-            <strong>Error:</strong> {errorMsg}
+            <strong>{errorMsg}</strong>
           </div>
         )}
 
@@ -149,7 +163,7 @@ function OnePoint() {
                 data={[
                   {
                     x: results.map((row) => row.iteration),
-                    y: results.map((row) => parseFloat(row.xNew)),
+                    y: results.map((row) => row.xNew),
                     type: "scatter",
                     mode: "lines+markers",
                     name: "x (next guess)",

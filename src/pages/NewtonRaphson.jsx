@@ -3,86 +3,91 @@ import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header from "../components/Header";
 import Plot from "react-plotly.js";
-import { evaluate, parse, derivative } from "mathjs";
+import { evaluate, derivative } from "mathjs";
+
+// ✅ class NewtonRaphsonMethod
+class NewtonRaphsonMethod {
+  constructor(equation, x0, tolerance, maxIterations = 50) {
+    this.equation = equation;
+    this.x0 = parseFloat(x0);
+    this.tolerance = parseFloat(tolerance);
+    this.maxIterations = maxIterations;
+    this.results = [];
+  }
+
+  solve() {
+    let x = this.x0;
+    let error = 1;
+    let iter = 0;
+    this.results = [];
+
+    const f = (xVal) => evaluate(this.equation, { x: xVal });
+    const fPrimeExpr = derivative(this.equation, 'x').toString();
+    const fPrime = (xVal) => evaluate(fPrimeExpr, { x: xVal });
+
+    while (error > this.tolerance && iter < this.maxIterations) {
+      const fx = f(x);
+      const fpx = fPrime(x);
+      if (fpx === 0) throw new Error("f'(x) = 0. Division by zero.");
+
+      const xNew = x - fx / fpx;
+      error = Math.abs((xNew - x) / xNew);
+
+      this.results.push({
+        iteration: iter + 1,
+        xOld: parseFloat(x.toFixed(6)),
+        xNew: parseFloat(xNew.toFixed(6)),
+        fX: parseFloat(fx.toFixed(6)),
+        fPrimeX: parseFloat(fpx.toFixed(6)),
+        error: parseFloat(error.toFixed(6)),
+      });
+
+      x = xNew;
+      iter++;
+    }
+
+    return this.results;
+  }
+}
 
 function NewtonRaphson() {
   const [equation, setEquation] = useState("x^3 - x - 2");
-  const [x0, setX0] = useState(1.5);
+  const [initialGuess, setInitialGuess] = useState(1.5);
   const [tolerance, setTolerance] = useState(0.000001);
   const [results, setResults] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
 
   const mathjsToLatex = (expr) => {
-    try {
-      return expr
-        .replace(/\*/g, " \\cdot ")
-        .replace(/\^([0-9]+)/g, "^{$1}")
-        .replace(/sin/g, "\\sin")
-        .replace(/cos/g, "\\cos")
-        .replace(/tan/g, "\\tan");
-    } catch {
-      return expr;
-    }
-  };
-
-  const solveNewtonRaphson = (eq, x0, tol, maxIter = 50) => {
-    const expr = parse(eq);
-    const diffExpr = derivative(expr, "x");
-
-    const results = [];
-    let iter = 0;
-    let xOld = parseFloat(x0);
-    let xNew, fx, fpx, error;
-
-    do {
-      fx = expr.evaluate({ x: xOld });
-      fpx = diffExpr.evaluate({ x: xOld });
-
-      if (fpx === 0) {
-        throw new Error("Derivative is zero. Cannot proceed.");
-      }
-
-      xNew = xOld - fx / fpx;
-      error = Math.abs((xNew - xOld) / xNew);
-
-      results.push({
-        iteration: iter + 1,
-        xOld: xOld.toFixed(6),
-        fx: fx.toFixed(6),
-        fpx: fpx.toFixed(6),
-        xNew: xNew.toFixed(6),
-        error: error.toFixed(6),
-      });
-
-      xOld = xNew;
-      iter++;
-    } while (error > tol && iter < maxIter);
-
-    return results;
+    return expr
+      .replace(/\*/g, " \\cdot ")
+      .replace(/\^([0-9]+)/g, "^{$1}")
+      .replace(/sin/g, "\\sin")
+      .replace(/cos/g, "\\cos")
+      .replace(/tan/g, "\\tan")
+      .replace(/exp/g, "\\exp");
   };
 
   const calculateNewtonRaphson = () => {
     try {
       setErrorMsg("");
-      const resultData = solveNewtonRaphson(equation, x0, tolerance);
-      setResults(resultData);
+      const nr = new NewtonRaphsonMethod(equation, initialGuess, tolerance);
+      const data = nr.solve();
+      setResults(data);
+
+      fetch("http://localhost:5000/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          method: "NewtonRaphson",
+          equation,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => console.log("History saved:", data));
     } catch (error) {
-      setErrorMsg(error.message);
+      setErrorMsg(error.message || "Invalid input");
       setResults([]);
     }
-
-    fetch("http://localhost:5000/api/history", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        method: "NewtonRaphson",
-        equation: equation,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("History saved:", data);
-      });
   };
 
   return (
@@ -91,15 +96,13 @@ function NewtonRaphson() {
       <div className="App" style={{ padding: "1rem", maxWidth: 700, margin: "auto" }}>
         <h1 style={{ color: "#1e3a8a" }}>Newton-Raphson Method</h1>
 
-        <div
-          style={{
-            marginBottom: "1rem",
-            backgroundColor: "#f0f4ff",
-            padding: "1rem",
-            borderRadius: "8px",
-            border: "1px solid #cbd5e1",
-          }}
-        >
+        <div style={{
+          marginBottom: "1rem",
+          backgroundColor: "#f0f4ff",
+          padding: "1rem",
+          borderRadius: "8px",
+          border: "1px solid #cbd5e1",
+        }}>
           <BlockMath math={`f(x) = ${mathjsToLatex(equation)}`} />
         </div>
 
@@ -113,12 +116,12 @@ function NewtonRaphson() {
         </div>
 
         <div style={{ marginBottom: "1rem" }}>
-          <label>Initial x₀:</label>
+          <label>Initial Guess (x₀):</label>
           <input
             type="number"
-            value={x0}
-            onChange={(e) => setX0(e.target.value)}
-            style={{ width: "100%", padding: "0.4rem", borderRadius: 4, border: "1px solid #ccc" }}
+            value={initialGuess}
+            onChange={(e) => setInitialGuess(e.target.value)}
+            style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc" }}
           />
         </div>
 
@@ -128,7 +131,7 @@ function NewtonRaphson() {
             type="number"
             value={tolerance}
             onChange={(e) => setTolerance(e.target.value)}
-            style={{ width: "100%", padding: "0.4rem", borderRadius: 4, border: "1px solid #ccc" }}
+            style={{ padding: "0.4rem", width: "100%", borderRadius: 4, border: "1px solid #ccc" }}
           />
         </div>
 
@@ -161,20 +164,22 @@ function NewtonRaphson() {
                 data={[
                   {
                     x: results.map((row) => row.iteration),
-                    y: results.map((row) => parseFloat(row.xNew)),
+                    y: results.map((row) => row.xNew),
                     type: "scatter",
                     mode: "lines+markers",
-                    name: "x (Approximated Root)",
+                    name: "x (next guess)",
                     marker: { color: "blue" },
                   },
                 ]}
                 layout={{
-                  title: "Newton-Raphson: x over Iterations",
+                  title: "Newton-Raphson Iteration",
                   xaxis: { title: "Iteration" },
                   yaxis: { title: "x" },
+                  autosize: true,
                   height: 400,
                   width: 600,
                 }}
+                style={{ margin: "0 auto" }}
               />
             </div>
 
@@ -188,9 +193,9 @@ function NewtonRaphson() {
                 <tr>
                   <th>Iteration</th>
                   <th>x<sub>old</sub></th>
-                  <th>f(x)</th>
-                  <th>f'(x)</th>
                   <th>x<sub>new</sub></th>
+                  <th>f(x)</th>
+                  <th>f′(x)</th>
                   <th>Error</th>
                 </tr>
               </thead>
@@ -199,9 +204,9 @@ function NewtonRaphson() {
                   <tr key={index}>
                     <td>{row.iteration}</td>
                     <td>{row.xOld}</td>
-                    <td>{row.fx}</td>
-                    <td>{row.fpx}</td>
                     <td>{row.xNew}</td>
+                    <td>{row.fX}</td>
+                    <td>{row.fPrimeX}</td>
                     <td>{row.error}</td>
                   </tr>
                 ))}
