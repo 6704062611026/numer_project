@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Plot from "react-plotly.js";
 import Header2 from "../components/Header2";
 
-// ✅ Class NewtonInterpolationMethod (รวมไว้ในไฟล์)
+
 class NewtonInterpolationMethod {
   constructor(points) {
     this.points = points.sort((a, b) => a.x - b.x);

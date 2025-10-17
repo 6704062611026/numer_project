@@ -2,7 +2,100 @@ import React, { useState } from "react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
-import solveLUDecomposition from "../utils/LUDecompositionMethod";
+
+// ✅ OOP Class สำหรับ LU Decomposition
+class LUDecomposer {
+  constructor(A, B) {
+    this.A = A.map(row => [...row]);
+    this.B = [...B];
+    this.n = A.length;
+    this.L = this.createZeroMatrix();
+    this.U = this.createZeroMatrix();
+    this.steps = [];
+    this.forward = [];
+    this.backward = [];
+    this.solution = [];
+  }
+
+  createZeroMatrix() {
+    return Array.from({ length: this.n }, () => Array(this.n).fill(0));
+  }
+
+  toLatexMatrix(matrix) {
+    return `\\begin{bmatrix}
+${matrix.map(row => row.map(num => num.toFixed(4)).join(" & ")).join(" \\\\ ")}
+\\end{bmatrix}`;
+  }
+
+  decompose() {
+    for (let i = 0; i < this.n; i++) {
+      // Upper Triangular (U)
+      for (let k = i; k < this.n; k++) {
+        let sum = 0;
+        for (let j = 0; j < i; j++) {
+          sum += this.L[i][j] * this.U[j][k];
+        }
+        this.U[i][k] = this.A[i][k] - sum;
+      }
+
+      // Lower Triangular (L)
+      for (let k = i; k < this.n; k++) {
+        if (i === k) {
+          this.L[i][i] = 1;
+        } else {
+          let sum = 0;
+          for (let j = 0; j < i; j++) {
+            sum += this.L[k][j] * this.U[j][i];
+          }
+          this.L[k][i] = (this.A[k][i] - sum) / this.U[i][i];
+        }
+      }
+
+      this.steps.push({
+        latex: `\\text{Step ${i + 1}: }\\quad L = ${this.toLatexMatrix(this.L)},\\quad U = ${this.toLatexMatrix(this.U)}`,
+      });
+    }
+  }
+
+  forwardSubstitution() {
+    const y = Array(this.n).fill(0);
+    for (let i = 0; i < this.n; i++) {
+      let sum = 0;
+      for (let j = 0; j < i; j++) {
+        sum += this.L[i][j] * y[j];
+      }
+      y[i] = this.B[i] - sum;
+      this.forward.push(`y_${i + 1} = ${this.B[i]} - (${sum.toFixed(4)}) = ${y[i].toFixed(4)}`);
+    }
+    return y;
+  }
+
+  backwardSubstitution(y) {
+    const x = Array(this.n).fill(0);
+    for (let i = this.n - 1; i >= 0; i--) {
+      let sum = 0;
+      for (let j = i + 1; j < this.n; j++) {
+        sum += this.U[i][j] * x[j];
+      }
+      x[i] = (y[i] - sum) / this.U[i][i];
+      this.backward.push(`x_${i + 1} = (${y[i].toFixed(4)} - ${sum.toFixed(4)}) / ${this.U[i][i].toFixed(4)} = ${x[i].toFixed(4)}`);
+    }
+    return x;
+  }
+
+  solve() {
+    this.decompose();
+    const y = this.forwardSubstitution();
+    const x = this.backwardSubstitution(y);
+    this.solution = x.map(num => parseFloat(num.toFixed(6)));
+    return {
+      steps: this.steps,
+      forward: this.forward,
+      backward: this.backward,
+      solution: this.solution,
+    };
+  }
+}
 
 function LUDecomposition() {
   const [size, setSize] = useState("3");
@@ -11,7 +104,8 @@ function LUDecomposition() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
-  const createEmptyMatrix = (n) => Array.from({ length: n }, () => Array(n).fill(0));
+  const createEmptyMatrix = (n) =>
+    Array.from({ length: n }, () => Array(n).fill(0));
 
   const handleChangeA = (row, col, value) => {
     const newMatrix = matrixA.map((r) => [...r]);
@@ -62,7 +156,8 @@ function LUDecomposition() {
       }
     }
 
-    const res = solveLUDecomposition(matrixA, matrixB);
+    const lu = new LUDecomposer(matrixA, matrixB);
+    const res = lu.solve();
     setResult(res);
   };
 
@@ -94,9 +189,7 @@ function LUDecomposition() {
                       key={colIndex}
                       type="number"
                       value={value}
-                      onChange={(e) =>
-                        handleChangeA(rowIndex, colIndex, e.target.value)
-                      }
+                      onChange={(e) => handleChangeA(rowIndex, colIndex, e.target.value)}
                       style={{
                         width: "70px",
                         margin: "4px",
@@ -142,7 +235,7 @@ function LUDecomposition() {
             }}
           >
             {matrixA.length === parseInt(size)
-              ? "Solve LU"
+              ? "Solve"
               : "Create Matrix"}
           </button>
         </div>

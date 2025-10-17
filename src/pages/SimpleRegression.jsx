@@ -97,7 +97,7 @@ function SimpleRegression() {
       <Header3 />
       <div className="App" style={{ padding: "2rem" }}>
         <h1 style={{ color: "#1e3a8a", textAlign: "center" }}>
-          Simple Linear Regression (with Extrapolation)
+          Simple Linear Regression
         </h1>
 
         {points.map((point, index) => (

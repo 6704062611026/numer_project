@@ -1,7 +1,75 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
+
+
+class ConjugateGradientSolver {
+  constructor(A, b, tol = 1e-8, maxIter = 100) {
+    this.A = A;
+    this.b = b;
+    this.tol = tol;
+    this.maxIter = maxIter;
+    this.n = b.length;
+
+    this.x = Array(this.n).fill(0);
+    this.r = this.vectorSubtract(this.b, this.matrixVectorMultiply(this.A, this.x));
+    this.p = [...this.r];
+    this.rsOld = this.dotProduct(this.r, this.r);
+    this.steps = [];
+  }
+
+  dotProduct(a, b) {
+    return a.reduce((sum, val, i) => sum + val * b[i], 0);
+  }
+
+  matrixVectorMultiply(A, x) {
+    return A.map(row => this.dotProduct(row, x));
+  }
+
+  vectorSubtract(a, b) {
+    return a.map((v, i) => v - b[i]);
+  }
+
+  vectorAdd(a, b) {
+    return a.map((v, i) => v + b[i]);
+  }
+
+  scalarMultiply(v, scalar) {
+    return v.map(val => val * scalar);
+  }
+
+  solve() {
+    for (let iter = 0; iter < this.maxIter; iter++) {
+      const Ap = this.matrixVectorMultiply(this.A, this.p);
+      const alpha = this.rsOld / this.dotProduct(this.p, Ap);
+      this.x = this.vectorAdd(this.x, this.scalarMultiply(this.p, alpha));
+      this.r = this.vectorSubtract(this.r, this.scalarMultiply(Ap, alpha));
+
+      const rsNew = this.dotProduct(this.r, this.r);
+      const beta = rsNew / this.rsOld;
+
+      this.steps.push({
+        iteration: iter + 1,
+        alpha,
+        beta,
+        x: `[${this.x.map(v => v.toFixed(6)).join(", ")}]`,
+        r: `[${this.r.map(v => v.toFixed(6)).join(", ")}]`,
+        p: `[${this.p.map(v => v.toFixed(6)).join(", ")}]`,
+      });
+
+      if (Math.sqrt(rsNew) < this.tol) break;
+
+      this.p = this.vectorAdd(this.r, this.scalarMultiply(this.p, beta));
+      this.rsOld = rsNew;
+    }
+    return {
+      steps: this.steps,
+      solution: this.x,
+    };
+  }
+}
+
 
 function ConjugateGradient() {
   const [inputSize, setInputSize] = useState("3");
@@ -15,60 +83,25 @@ function ConjugateGradient() {
   }
 
   const handleChangeA = (row, col, value) => {
-    const newMatrix = [...matrixA];
-    newMatrix[row][col] = parseFloat(value);
+    const newMatrix = matrixA.map(r => [...r]);
+    newMatrix[row][col] = value === "" ? 0 : parseFloat(value);
     setMatrixA(newMatrix);
   };
 
   const handleChangeB = (row, value) => {
     const newMatrix = [...matrixB];
-    newMatrix[row] = parseFloat(value);
+    newMatrix[row] = value === "" ? 0 : parseFloat(value);
     setMatrixB(newMatrix);
   };
 
-  const dotProduct = (a, b) => a.reduce((sum, val, i) => sum + val * b[i], 0);
-  const matrixVectorMultiply = (A, x) => A.map(row => dotProduct(row, x));
-  const vectorSubtract = (a, b) => a.map((v, i) => v - b[i]);
-  const vectorAdd = (a, b) => a.map((v, i) => v + b[i]);
-  const scalarMultiply = (v, scalar) => v.map(val => val * scalar);
-
-  const solveConjugateGradient = (A, b, tol = 1e-8, maxIter = 100) => {
-    const n = b.length;
-    let x = Array(n).fill(0); // เริ่มต้นด้วย x0 = 0
-    let r = vectorSubtract(b, matrixVectorMultiply(A, x));
-    let p = [...r];
-    let rsOld = dotProduct(r, r);
-    const steps = [];
-
-    for (let iter = 0; iter < maxIter; iter++) {
-      const Ap = matrixVectorMultiply(A, p);
-      const alpha = rsOld / dotProduct(p, Ap);
-      x = vectorAdd(x, scalarMultiply(p, alpha));
-      r = vectorSubtract(r, scalarMultiply(Ap, alpha));
-
-      const rsNew = dotProduct(r, r);
-      const beta = rsNew / rsOld;
-
-      steps.push({
-        iteration: iter + 1,
-        alpha,
-        beta,
-        x: `[${x.map(v => v.toFixed(6)).join(", ")}]`,
-        r: `[${r.map(v => v.toFixed(6)).join(", ")}]`,
-        p: `[${p.map(v => v.toFixed(6)).join(", ")}]`,
-      });
-
-      if (Math.sqrt(rsNew) < tol) break;
-
-      p = vectorAdd(r, scalarMultiply(p, beta));
-      rsOld = rsNew;
-    }
-
-    return {
-      steps,
-      solution: x,
-    };
-  };
+  useEffect(() => {
+    const n = parseInt(inputSize);
+    if (isNaN(n) || n < 2) return;
+    setMatrixA(createEmptyMatrix(n));
+    setMatrixB(Array(n).fill(0));
+    setResult(null);
+    setError("");
+  }, [inputSize]);
 
   const handleSolve = () => {
     const size = parseInt(inputSize);
@@ -78,14 +111,22 @@ function ConjugateGradient() {
     }
     setError("");
 
-    if (matrixA.length !== size) {
-      setMatrixA(createEmptyMatrix(size));
-      setMatrixB(Array(size).fill(0));
-      setResult(null);
-      return;
+
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        if (isNaN(matrixA[i][j])) {
+          setError("Please fill all entries in Matrix A.");
+          return;
+        }
+      }
+      if (isNaN(matrixB[i])) {
+        setError("Please fill all entries in Matrix B.");
+        return;
+      }
     }
 
-    const res = solveConjugateGradient(matrixA, matrixB);
+    const solver = new ConjugateGradientSolver(matrixA, matrixB);
+    const res = solver.solve();
     setResult(res);
   };
 

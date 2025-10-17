@@ -3,65 +3,76 @@ import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
 
-// ✅ ฟังก์ชันช่วย format ตัวเลข
-function formatNumber(x) {
-  if (Math.abs(x) < 1e-10) return "0";
-  if (Number.isInteger(x)) return String(x);
-  return parseFloat(x.toFixed(6)).toString();
-}
 
-// ✅ รวม solveCholesky มาไว้ในไฟล์นี้
-function solveCholesky(A) {
-  const n = A.length;
-  const L = Array.from({ length: n }, () => Array(n).fill(0));
-  const steps = [];
-
-  // ตรวจสอบว่า symmetric หรือไม่
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-      if (A[i][j] !== A[j][i]) {
-        return { error: "Matrix A is not symmetric. Cholesky cannot be applied." };
-      }
-    }
+class CholeskySolver {
+  constructor(matrix) {
+    this.A = matrix;
+    this.n = matrix.length;
+    this.L = Array.from({ length: this.n }, () => Array(this.n).fill(0));
+    this.steps = [];
   }
 
-  try {
-    for (let i = 0; i < n; i++) {
-      for (let j = 0; j <= i; j++) {
-        let sum = 0;
-        for (let k = 0; k < j; k++) {
-          sum += L[i][k] * L[j][k];
-        }
+  isSymmetric() {
+    for (let i = 0; i < this.n; i++) {
+      for (let j = 0; j < this.n; j++) {
+        if (this.A[i][j] !== this.A[j][i]) return false;
+      }
+    }
+    return true;
+  }
 
-        if (i === j) {
-          const val = A[i][i] - sum;
-          if (val <= 0) {
-            return { error: "Matrix is not positive definite. Cholesky failed." };
+  formatNumber(x) {
+    if (Math.abs(x) < 1e-10) return "0";
+    if (Number.isInteger(x)) return String(x);
+    return parseFloat(x.toFixed(6)).toString();
+  }
+
+  decompose() {
+    if (!this.isSymmetric()) {
+      return { error: "Matrix A is not symmetric. Cholesky cannot be applied." };
+    }
+
+    try {
+      for (let i = 0; i < this.n; i++) {
+        for (let j = 0; j <= i; j++) {
+          let sum = 0;
+          for (let k = 0; k < j; k++) {
+            sum += this.L[i][k] * this.L[j][k];
           }
-          L[i][j] = Math.sqrt(val);
-          steps.push(
-            `L_{${i + 1}${j + 1}} = \\sqrt{A_{${i + 1}${i + 1}} - \\sum_{k=1}^{${j}} L_{${i + 1}k}^2} = \\sqrt{${A[i][i]} - ${formatNumber(sum)}} = ${formatNumber(L[i][j])}`
-          );
-        } else {
-          L[i][j] = (A[i][j] - sum) / L[j][j];
-          steps.push(
-            `L_{${i + 1}${j + 1}} = \\frac{A_{${i + 1}${j + 1}} - \\sum_{k=1}^{${j}} L_{${i + 1}k}L_{${j + 1}k}}{L_{${j + 1}${j + 1}}} = \\frac{${A[i][j]} - ${formatNumber(sum)}}{${formatNumber(
-              L[j][j]
-            )}} = ${formatNumber(L[i][j])}`
-          );
+
+          if (i === j) {
+            const val = this.A[i][i] - sum;
+            if (val <= 0) {
+              return { error: "Matrix is not positive definite. Cholesky failed." };
+            }
+            this.L[i][j] = Math.sqrt(val);
+            this.steps.push(
+              `L_{${i + 1}${j + 1}} = \\sqrt{${this.A[i][i]} - ${this.formatNumber(sum)}} = ${this.formatNumber(this.L[i][j])}`
+            );
+          } else {
+            this.L[i][j] = (this.A[i][j] - sum) / this.L[j][j];
+            this.steps.push(
+              `L_{${i + 1}${j + 1}} = \\frac{${this.A[i][j]} - ${this.formatNumber(sum)}}{${this.formatNumber(this.L[j][j])}} = ${this.formatNumber(this.L[i][j])}`
+            );
+          }
         }
       }
+
+      const Llatex = `\\begin{pmatrix}${this.L.map(row => row.map(this.formatNumber).join("&")).join("\\\\")}\\end{pmatrix}`;
+      const LT = this.L[0].map((_, i) => this.L.map(row => row[i]));
+      const LTlatex = `\\begin{pmatrix}${LT.map(row => row.map(this.formatNumber).join("&")).join("\\\\")}\\end{pmatrix}`;
+
+      return {
+        steps: this.steps,
+        Llatex,
+        LTlatex,
+      };
+    } catch (e) {
+      return { error: "Error computing Cholesky decomposition." };
     }
-  } catch (e) {
-    return { error: "Error computing Cholesky decomposition." };
   }
-
-  const Llatex = `\\begin{pmatrix}${L.map(r => r.map(formatNumber).join("&")).join("\\\\")}\\end{pmatrix}`;
-  const LT = L[0].map((_, i) => L.map(row => row[i]));
-  const LTlatex = `\\begin{pmatrix}${LT.map(r => r.map(formatNumber).join("&")).join("\\\\")}\\end{pmatrix}`;
-
-  return { steps, Llatex, LTlatex };
 }
+
 
 function CholeskyDecomposition() {
   const [size, setSize] = useState("3");
@@ -72,7 +83,7 @@ function CholeskyDecomposition() {
   const createEmptyMatrix = (n) => Array.from({ length: n }, () => Array(n).fill(0));
 
   const handleChangeA = (row, col, value) => {
-    const newMatrix = matrixA.map((r) => [...r]);
+    const newMatrix = matrixA.map(row => [...row]);
     newMatrix[row][col] = value === "" ? "" : parseFloat(value);
     setMatrixA(newMatrix);
   };
@@ -105,20 +116,22 @@ function CholeskyDecomposition() {
       }
     }
 
-    const res = solveCholesky(matrixA);
+    const solver = new CholeskySolver(matrixA);
+    const res = solver.decompose();
     setResult(res);
+
 
     fetch("http://localhost:5000/api/history", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         method: "Cholesky",
-        matrixA: JSON.stringify(matrixA),
-        result: JSON.stringify(res),
+        matrixA: matrixA,
+        result: res,
       }),
     })
       .then((r) => r.json())
-      .then((data) => alert("History saved successfully!"))
+      .then(() => alert("History saved successfully!"))
       .catch((err) => alert("Error saving history: " + err));
   };
 
@@ -177,7 +190,7 @@ function CholeskyDecomposition() {
               marginTop: "1rem",
             }}
           >
-            {matrixA.length === parseInt(size) ? "Decompose" : "Create Matrix"}
+            {matrixA.length === parseInt(size) ? "Solve" : "Create Matrix"}
           </button>
         </div>
 

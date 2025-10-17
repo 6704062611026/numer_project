@@ -185,7 +185,7 @@ function NumericalDifferentiation() {
 
         <div style={{ marginBottom: "1rem" }}>
           <label>f(x): </label>
-          <input type="text" value={fx} onChange={(e) => setFx(e.target.value)} style={{ width: "100%" }} />
+          <input type="text" value={fx} onChange={(e) => setFx(e.target.value)} style={{ width: "90%" }} />
         </div>
 
         <div style={{ marginBottom: "1rem" }}>
@@ -221,7 +221,7 @@ function NumericalDifferentiation() {
           background: "#1e3a8a", color: "#fff", padding: "0.5rem 1rem",
           borderRadius: 4, border: "none", cursor: "pointer"
         }}>
-          Calculate Derivative
+          Calculate
         </button>
 
         {result && (

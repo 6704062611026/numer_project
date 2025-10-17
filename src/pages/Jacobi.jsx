@@ -2,7 +2,54 @@ import React, { useState } from "react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
-import solveJacobi from "../utils/JacobiIterationMethod";
+
+
+class JacobiSolver {
+  constructor(A, B, X0, maxIterations = 5) {
+    this.A = A;
+    this.B = B;
+    this.X = [...X0];
+    this.n = A.length;
+    this.maxIterations = maxIterations;
+    this.steps = [];
+  }
+
+  formatNumber(x) {
+    if (Math.abs(x) < 1e-10) return "0";
+    if (Number.isInteger(x)) return String(x);
+    return parseFloat(x.toFixed(6)).toString();
+  }
+
+  iterate() {
+    const X_new = Array(this.n).fill(0);
+
+    for (let iter = 1; iter <= this.maxIterations; iter++) {
+      let stepLatex = `x^{(${iter})} = \\begin{pmatrix}`;
+      for (let i = 0; i < this.n; i++) {
+        let sum = this.B[i];
+        for (let j = 0; j < this.n; j++) {
+          if (j !== i) {
+            sum -= this.A[i][j] * this.X[j];
+          }
+        }
+        X_new[i] = sum / this.A[i][i];
+        stepLatex += this.formatNumber(X_new[i]);
+        if (i !== this.n - 1) stepLatex += " \\\\ ";
+      }
+      stepLatex += "\\end{pmatrix}";
+      this.steps.push(stepLatex);
+      this.X = [...X_new];
+    }
+
+    const finalLatex = `\\begin{pmatrix}${this.X.map(this.formatNumber).join(" \\\\ ")}\\end{pmatrix}`;
+
+    return {
+      steps: this.steps,
+      finalLatex,
+    };
+  }
+}
+
 
 function JacobiIteration() {
   const [size, setSize] = useState("3");
@@ -43,7 +90,6 @@ function JacobiIteration() {
 
     setError("");
 
-    
     if (matrixA.length !== n) {
       setMatrixA(createEmptyMatrix(n));
       setVectorB(createEmptyVector(n));
@@ -52,20 +98,49 @@ function JacobiIteration() {
       return;
     }
 
-   
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
-        if (matrixA[i][j] === "" || matrixA[i][j] === undefined)
+        if (
+          matrixA[i][j] === "" ||
+          matrixA[i][j] === undefined ||
+          Number.isNaN(matrixA[i][j])
+        )
           return setError("Please fill all entries in Matrix A.");
       }
-      if (vectorB[i] === "" || vectorB[i] === undefined)
+      if (
+        vectorB[i] === "" ||
+        vectorB[i] === undefined ||
+        Number.isNaN(vectorB[i])
+      )
         return setError("Please fill all entries in Vector B.");
-      if (vectorX0[i] === "" || vectorX0[i] === undefined)
+      if (
+        vectorX0[i] === "" ||
+        vectorX0[i] === undefined ||
+        Number.isNaN(vectorX0[i])
+      )
         return setError("Please fill all initial guesses X₀.");
     }
 
-    const res = solveJacobi(matrixA, vectorB, vectorX0, iterations);
+    const solver = new JacobiSolver(matrixA, vectorB, vectorX0, parseInt(iterations));
+    const res = solver.iterate();
     setResult(res);
+
+    // Optional: บันทึกประวัติ
+    fetch("http://localhost:5000/api/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "Jacobi",
+        matrixA,
+        vectorB,
+        initialGuess: vectorX0,
+        iterations,
+        result: res,
+      }),
+    })
+      .then((r) => r.json())
+      .then(() => console.log("History saved"))
+      .catch((err) => console.warn("History save failed:", err));
   };
 
   return (
@@ -167,7 +242,7 @@ function JacobiIteration() {
             }}
           >
             {matrixA.length === parseInt(size)
-              ? "Iterate"
+              ? "Solve"
               : "Create Matrix"}
           </button>
         </div>

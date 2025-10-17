@@ -2,7 +2,96 @@ import React, { useState } from "react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
-import solveGauss from "../utils/GaussEliminationMethod";
+
+class GaussSolver {
+  constructor(A, B) {
+    this.A = A.map(row => [...row]);
+    this.B = [...B];
+    this.n = A.length;
+
+    this.forwardSteps = [];
+    this.backSubstitutionSteps = [];
+    this.solution = Array(this.n).fill(0);
+  }
+
+  cloneMatrixWithB() {
+    return this.A.map((row, i) => [...row, this.B[i]]);
+  }
+
+  toLatexMatrix(matrix) {
+    const rows = matrix.map(row => row.map(v => v.toFixed(3)).join(" & "));
+    return `\\begin{bmatrix}${rows.join(" \\\\ ")}\\end{bmatrix}`;
+  }
+
+  solve() {
+    this.forwardElimination();
+    const solution = this.backSubstitution();
+    return {
+      forward: this.forwardSteps,
+      backSubstitution: this.backSubstitutionSteps,
+      solution,
+      upperMatrixLatex: this.toLatexMatrix(this.cloneMatrixWithB())
+    };
+  }
+
+  forwardElimination() {
+    const n = this.n;
+
+    for (let i = 0; i < n; i++) {
+     
+      let maxRow = i;
+      for (let k = i + 1; k < n; k++) {
+        if (Math.abs(this.A[k][i]) > Math.abs(this.A[maxRow][i])) {
+          maxRow = k;
+        }
+      }
+
+     
+      if (maxRow !== i) {
+        [this.A[i], this.A[maxRow]] = [this.A[maxRow], this.A[i]];
+        [this.B[i], this.B[maxRow]] = [this.B[maxRow], this.B[i]];
+        this.forwardSteps.push({
+          type: "swap",
+          latex: `R_{${i + 1}} \\leftrightarrow R_{${maxRow + 1}}`,
+          matrixLatex: this.toLatexMatrix(this.cloneMatrixWithB())
+        });
+      }
+
+ 
+      for (let k = i + 1; k < n; k++) {
+        const factor = this.A[k][i] / this.A[i][i];
+        for (let j = i; j < n; j++) {
+          this.A[k][j] -= factor * this.A[i][j];
+        }
+        this.B[k] -= factor * this.B[i];
+
+        this.forwardSteps.push({
+          type: "factor",
+          latex: `R_{${k + 1}} = R_{${k + 1}} - (${factor.toFixed(3)})R_{${i + 1}}`,
+          matrixLatex: this.toLatexMatrix(this.cloneMatrixWithB())
+        });
+      }
+    }
+  }
+
+  backSubstitution() {
+    const n = this.n;
+    const x = Array(n).fill(0);
+
+    for (let i = n - 1; i >= 0; i--) {
+      let sum = this.B[i];
+      for (let j = i + 1; j < n; j++) {
+        sum -= this.A[i][j] * x[j];
+      }
+      x[i] = sum / this.A[i][i];
+      this.backSubstitutionSteps.push(`x_{${i + 1}} = ${x[i].toFixed(6)}`);
+    }
+
+    this.solution = x;
+    return x;
+  }
+}
+
 
 function GaussElimination() {
   const [inputSize, setInputSize] = useState("3");
@@ -35,7 +124,6 @@ function GaussElimination() {
     }
     setError("");
 
-   
     if (matrixA.length !== n) {
       setMatrixA(createEmptyMatrix(n));
       setMatrixB(Array(n).fill(0));
@@ -43,21 +131,30 @@ function GaussElimination() {
       return;
     }
 
-   
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
-        if (matrixA[i][j] === "" || matrixA[i][j] === undefined || Number.isNaN(matrixA[i][j])) {
+        if (
+          matrixA[i][j] === "" ||
+          matrixA[i][j] === undefined ||
+          Number.isNaN(matrixA[i][j])
+        ) {
           setError("Please fill all entries in Matrix A.");
           return;
         }
       }
-      if (matrixB[i] === "" || matrixB[i] === undefined || Number.isNaN(matrixB[i])) {
+      if (
+        matrixB[i] === "" ||
+        matrixB[i] === undefined ||
+        Number.isNaN(matrixB[i])
+      ) {
         setError("Please fill all entries in Matrix B.");
         return;
       }
     }
 
-    const res = solveGauss(matrixA, matrixB);
+   
+    const solver = new GaussSolver(matrixA, matrixB);
+    const res = solver.solve();
     setResult(res);
   };
 
@@ -65,7 +162,7 @@ function GaussElimination() {
     <>
       <Header1 />
       <div style={{ padding: "1rem", maxWidth: 1000, margin: "auto", textAlign: "center" }}>
-        <h1 style={{ color: "#1e3a8a" }}>Gaussian Elimination (Step-by-step)</h1>
+        <h1 style={{ color: "#1e3a8a" }}>Gaussian Elimination</h1>
 
         <div style={{ marginBottom: "1rem" }}>
           <label><strong>Matrix Size (n × n):</strong></label>
@@ -134,7 +231,7 @@ function GaussElimination() {
               marginTop: "1rem",
             }}
           >
-            {matrixA.length === parseInt(inputSize) ? "Solve (Gaussian Elimination)" : "Create Matrix"}
+            {matrixA.length === parseInt(inputSize) ? "Solve" : "Create Matrix"}
           </button>
         </div>
 
@@ -158,7 +255,6 @@ function GaussElimination() {
             <BlockMath math={`\\text{Forward Elimination (Gaussian Elimination)}`} />
             {result.forward.map((item, idx) => (
               <div key={idx} style={{ marginBottom: "0.5rem" }}>
-              
                 {item.type === "swap" && (
                   <>
                     <BlockMath math={`\\text{Swap rows: } ${item.latex}`} />

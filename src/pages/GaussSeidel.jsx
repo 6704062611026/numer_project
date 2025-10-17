@@ -2,7 +2,46 @@ import React, { useState } from "react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
-import solveGaussSeidel from "../utils/GaussSeidelIterationMethod";
+
+
+class GaussSeidelSolver {
+  constructor(A, B, X0, iterations = 5) {
+    this.A = A;
+    this.B = B;
+    this.X = [...X0];
+    this.n = A.length;
+    this.iterations = iterations;
+    this.steps = [];
+  }
+
+  formatNumber(x) {
+    if (Math.abs(x) < 1e-10) return "0";
+    if (Number.isInteger(x)) return String(x);
+    return parseFloat(x.toFixed(6)).toString();
+  }
+
+  solve() {
+    for (let iter = 1; iter <= this.iterations; iter++) {
+      let stepLatex = `x^{(${iter})} = \\begin{pmatrix}`;
+
+      for (let i = 0; i < this.n; i++) {
+        let sum = this.B[i];
+        for (let j = 0; j < this.n; j++) {
+          if (j !== i) sum -= this.A[i][j] * this.X[j];
+        }
+        this.X[i] = sum / this.A[i][i];
+        stepLatex += this.formatNumber(this.X[i]);
+        if (i !== this.n - 1) stepLatex += " \\\\ ";
+      }
+
+      stepLatex += "\\end{pmatrix}";
+      this.steps.push(stepLatex);
+    }
+
+    const finalLatex = `\\begin{pmatrix}${this.X.map(this.formatNumber).join(" \\\\ ")}\\end{pmatrix}`;
+    return { steps: this.steps, finalLatex };
+  }
+}
 
 function GaussSeidelIteration() {
   const [size, setSize] = useState("3");
@@ -43,7 +82,7 @@ function GaussSeidelIteration() {
 
     setError("");
 
-    // Create Matrix
+    // สร้าง matrix และ vector
     if (matrixA.length !== n) {
       setMatrixA(createEmptyMatrix(n));
       setVectorB(createEmptyVector(n));
@@ -52,19 +91,33 @@ function GaussSeidelIteration() {
       return;
     }
 
-    // Validate all entries
+    // ตรวจสอบค่าที่กรอก
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
-        if (matrixA[i][j] === "" || matrixA[i][j] === undefined)
+        if (
+          matrixA[i][j] === "" ||
+          matrixA[i][j] === undefined ||
+          isNaN(matrixA[i][j])
+        )
           return setError("Please fill all entries in Matrix A.");
       }
-      if (vectorB[i] === "" || vectorB[i] === undefined)
+      if (
+        vectorB[i] === "" ||
+        vectorB[i] === undefined ||
+        isNaN(vectorB[i])
+      )
         return setError("Please fill all entries in Vector B.");
-      if (vectorX0[i] === "" || vectorX0[i] === undefined)
+      if (
+        vectorX0[i] === "" ||
+        vectorX0[i] === undefined ||
+        isNaN(vectorX0[i])
+      )
         return setError("Please fill all initial guesses X₀.");
     }
 
-    const res = solveGaussSeidel(matrixA, vectorB, vectorX0, iterations);
+    // เรียกใช้ OOP class
+    const solver = new GaussSeidelSolver(matrixA, vectorB, vectorX0, parseInt(iterations));
+    const res = solver.solve();
     setResult(res);
   };
 
@@ -72,7 +125,7 @@ function GaussSeidelIteration() {
     <>
       <Header1 />
       <div style={{ padding: "1rem", maxWidth: 1000, margin: "auto", textAlign: "center" }}>
-        <h1 style={{ color: "#1e3a8a" }}>Gauss–Seidel Iteration Method</h1>
+        <h1 style={{ color: "#1e3a8a" }}>Gauss Seidel Iteration Method</h1>
 
         <div style={{ marginBottom: "1rem" }}>
           <label><strong>Matrix Size (n × n):</strong></label>
@@ -166,9 +219,7 @@ function GaussSeidelIteration() {
               marginTop: "1rem",
             }}
           >
-            {matrixA.length === parseInt(size)
-              ? "Iterate"
-              : "Create Matrix"}
+            {matrixA.length === parseInt(size) ? "Solve" : "Create Matrix"}
           </button>
         </div>
 

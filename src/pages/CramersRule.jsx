@@ -3,6 +3,63 @@ import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
 
+
+class CramerSolver {
+  constructor(A, B) {
+    this.A = A;
+    this.B = B;
+    this.n = A.length;
+  }
+
+  
+  determinant(matrix) {
+    const n = matrix.length;
+    if (n === 1) return matrix[0][0];
+    if (n === 2)
+      return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+
+    let det = 0;
+    for (let col = 0; col < n; col++) {
+      const sign = col % 2 === 0 ? 1 : -1;
+      const subMatrix = matrix.slice(1).map(row =>
+        row.filter((_, idx) => idx !== col)
+      );
+      det += sign * matrix[0][col] * this.determinant(subMatrix);
+    }
+    return det;
+  }
+
+  replaceColumn(matrix, colIndex, newCol) {
+    return matrix.map((row, i) => {
+      const newRow = [...row];
+      newRow[colIndex] = newCol[i];
+      return newRow;
+    });
+  }
+
+  solve() {
+    const detA = this.determinant(this.A);
+    const steps = [];
+
+    if (detA === 0) {
+      return {
+        detA,
+        steps: [],
+        error: "Matrix A is singular (det(A) = 0), so Cramer's Rule can't be applied.",
+      };
+    }
+
+    for (let i = 0; i < this.n; i++) {
+      const Ai = this.replaceColumn(this.A, i, this.B);
+      const detAi = this.determinant(Ai);
+      const value = detAi / detA;
+      steps.push({ detAi, value: value.toFixed(10) });
+    }
+
+    return { detA, steps };
+  }
+}
+
 function CramerRule() {
   const [inputSize, setInputSize] = useState("3");
   const [matrixA, setMatrixA] = useState([]);
@@ -10,9 +67,8 @@ function CramerRule() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
-  function createEmptyMatrix(n) {
-    return Array.from({ length: n }, () => Array(n).fill(0));
-  }
+  const createEmptyMatrix = (n) =>
+    Array.from({ length: n }, () => Array(n).fill(0));
 
   const handleChangeA = (row, col, value) => {
     const newMatrix = [...matrixA];
@@ -26,63 +82,11 @@ function CramerRule() {
     setMatrixB(newMatrix);
   };
 
-  // ฟังก์ชันคำนวณ determinant แบบ recursive
-  function determinant(matrix) {
-    const n = matrix.length;
-
-    if (n === 1) return matrix[0][0];
-    if (n === 2)
-      return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
-
-    let det = 0;
-    for (let col = 0; col < n; col++) {
-      const sign = col % 2 === 0 ? 1 : -1;
-      const subMatrix = matrix.slice(1).map(row =>
-        row.filter((_, index) => index !== col)
-      );
-      det += sign * matrix[0][col] * determinant(subMatrix);
-    }
-
-    return det;
-  }
-
-  // ฟังก์ชันแทนที่ column ของ matrix ด้วย newCol
-  function replaceColumn(matrix, colIndex, newCol) {
-    return matrix.map((row, i) => {
-      const newRow = [...row];
-      newRow[colIndex] = newCol[i];
-      return newRow;
-    });
-  }
-
-  // ฟังก์ชันแก้สมการโดย Cramer's Rule
-  function solveCramer(A, B) {
-    const detA = determinant(A);
-    const steps = [];
-
-    if (detA === 0) {
-      return {
-        detA,
-        steps: [],
-        error: "Matrix A is singular (det(A) = 0), so Cramer's Rule can't be applied.",
-      };
-    }
-
-    for (let i = 0; i < A.length; i++) {
-      const Ai = replaceColumn(A, i, B);
-      const detAi = determinant(Ai);
-      const value = detAi / detA;
-      steps.push({ detAi, value: value.toFixed(10) });
-    }
-
-    return { detA, steps };
-  }
-
   const handleSolve = () => {
     const size = parseInt(inputSize);
 
     if (isNaN(size) || size < 2) {
-      setError("Matrix size must be a number greater than or equal to 2");
+      setError("Matrix size must be a number ≥ 2");
       setResult(null);
       return;
     }
@@ -96,18 +100,24 @@ function CramerRule() {
       return;
     }
 
-    // เช็คว่ามีค่าเป็นตัวเลขครบก่อน solve
     for (let i = 0; i < size; i++) {
-      if (!matrixB[i] && matrixB[i] !== 0) return;
+      if (matrixB[i] === undefined || Number.isNaN(matrixB[i])) {
+        setError("Please fill all entries in Matrix B.");
+        return;
+      }
       for (let j = 0; j < size; j++) {
-        if (!matrixA[i][j] && matrixA[i][j] !== 0) return;
+        if (matrixA[i][j] === undefined || Number.isNaN(matrixA[i][j])) {
+          setError("Please fill all entries in Matrix A.");
+          return;
+        }
       }
     }
 
-    const res = solveCramer(matrixA, matrixB);
+    const solver = new CramerSolver(matrixA, matrixB);
+    const res = solver.solve();
     setResult(res);
 
-    // ส่งประวัติหลัง solve
+    // Save history (optional)
     fetch("http://localhost:5000/api/history", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -218,7 +228,7 @@ function CramerRule() {
             <BlockMath math={`\\det(A) = ${result.detA}`} />
             {result.steps.map((step, index) => (
               <div key={index}>
-                <BlockMath math={`x_${index + 1} = \\frac{\\det(A_${index + 1})}{\\det(A)} = \\frac{${step.detAi}}{${result.detA}} = ${step.value}`} />
+                <BlockMath math={`x_${index + 1} = \\frac{${step.detAi}}{${result.detA}} = ${step.value}`} />
               </div>
             ))}
             <br />

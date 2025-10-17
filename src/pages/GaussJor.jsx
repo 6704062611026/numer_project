@@ -2,7 +2,76 @@ import React, { useState } from "react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 import Header1 from "../components/Header1";
-import solveGaussJordan from "../utils/GaussJordanMethod";
+
+
+class GaussJordanSolver {
+  constructor(A, B) {
+    this.n = A.length;
+    this.A = A.map((row, i) => [...row, B[i]]); 
+    this.steps = [];
+    this.solution = [];
+  }
+
+  toLatexMatrix(matrix) {
+    const rows = matrix.map(row => row.map(v => v.toFixed(3)).join(" & "));
+    return `\\begin{bmatrix}${rows.join(" \\\\ ")}\\end{bmatrix}`;
+  }
+
+  solve() {
+    const n = this.n;
+    const mat = this.A;
+
+    for (let i = 0; i < n; i++) {
+      
+      const pivot = mat[i][i];
+      if (pivot === 0) {
+        
+        let found = false;
+        for (let k = i + 1; k < n; k++) {
+          if (mat[k][i] !== 0) {
+            [mat[i], mat[k]] = [mat[k], mat[i]];
+            this.steps.push({
+              latex: `\\text{Swap } R_${i + 1} \\leftrightarrow R_${k + 1}`,
+              matrixLatex: this.toLatexMatrix(mat)
+            });
+            found = true;
+            break;
+          }
+        }
+        if (!found) continue;
+      }
+
+      const pivotVal = mat[i][i];
+      for (let j = 0; j <= n; j++) {
+        mat[i][j] /= pivotVal;
+      }
+      this.steps.push({
+        latex: `R_${i + 1} \\leftarrow \\frac{1}{${pivotVal.toFixed(3)}} R_${i + 1}`,
+        matrixLatex: this.toLatexMatrix(mat)
+      });
+
+      
+      for (let k = 0; k < n; k++) {
+        if (k === i) continue;
+        const factor = mat[k][i];
+        for (let j = 0; j <= n; j++) {
+          mat[k][j] -= factor * mat[i][j];
+        }
+        this.steps.push({
+          latex: `R_${k + 1} \\leftarrow R_${k + 1} - (${factor.toFixed(3)}) R_${i + 1}`,
+          matrixLatex: this.toLatexMatrix(mat)
+        });
+      }
+    }
+
+    this.solution = mat.map(row => row[n]);
+    return {
+      steps: this.steps,
+      finalMatrixLatex: this.toLatexMatrix(mat),
+      solution: this.solution
+    };
+  }
+}
 
 function GaussJordan() {
   const [inputSize, setInputSize] = useState("3");
@@ -63,7 +132,8 @@ function GaussJordan() {
       }
     }
 
-    const res = solveGaussJordan(matrixA, matrixB);
+    const solver = new GaussJordanSolver(matrixA, matrixB);
+    const res = solver.solve();
     setResult(res);
   };
 
@@ -78,7 +148,9 @@ function GaussJordan() {
           textAlign: "center",
         }}
       >
-        <h1 style={{ color: "#1e3a8a" }}>Gauss–Jordan Elimination (Step-by-step)</h1>
+        <h1 style={{ color: "#1e3a8a" }}>
+          Gauss Jordan Elimination
+        </h1>
 
         <div style={{ marginBottom: "1rem" }}>
           <label>
@@ -95,7 +167,9 @@ function GaussJordan() {
 
         {matrixA.length > 0 && (
           <>
-            <h3>Matrix A ({matrixA.length}×{matrixA.length}):</h3>
+            <h3>
+              Matrix A ({matrixA.length}×{matrixA.length}):
+            </h3>
             <div style={{ display: "inline-block", textAlign: "center" }}>
               {matrixA.map((row, rowIndex) => (
                 <div key={rowIndex}>
@@ -152,7 +226,7 @@ function GaussJordan() {
             }}
           >
             {matrixA.length === parseInt(inputSize)
-              ? "Solve (Gauss–Jordan)"
+              ? "Solve"
               : "Create Matrix"}
           </button>
         </div>
