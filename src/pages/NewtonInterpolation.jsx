@@ -1,8 +1,79 @@
 import React, { useState } from "react";
 import Plot from "react-plotly.js";
 import Header2 from "../components/Header2";
-import NewtonInterpolationMethod from "../utils/NewtonInterpolationMethod";
 
+// ✅ Class NewtonInterpolationMethod (รวมไว้ในไฟล์)
+class NewtonInterpolationMethod {
+  constructor(points) {
+    this.points = points.sort((a, b) => a.x - b.x);
+    this.n = points.length;
+    this.xs = this.points.map((p) => p.x);
+    this.ys = this.points.map((p) => p.y);
+    this.dividedDifferenceTable = this.buildDividedDifferenceTable();
+  }
+
+  buildDividedDifferenceTable() {
+    const n = this.n;
+    const table = Array.from({ length: n }, () => Array(n).fill(0));
+
+    // Fill first column with y values
+    for (let i = 0; i < n; i++) {
+      table[i][0] = this.ys[i];
+    }
+
+    // Compute divided differences
+    for (let j = 1; j < n; j++) {
+      for (let i = 0; i < n - j; i++) {
+        const numerator = table[i + 1][j - 1] - table[i][j - 1];
+        const denominator = this.xs[i + j] - this.xs[i];
+        table[i][j] = numerator / denominator;
+      }
+    }
+
+    return table;
+  }
+
+  getTable() {
+    return this.dividedDifferenceTable;
+  }
+
+  getXs() {
+    return this.xs;
+  }
+
+  getYs() {
+    return this.ys;
+  }
+
+  evaluate(x) {
+    let result = this.dividedDifferenceTable[0][0];
+    let term = 1;
+
+    for (let i = 1; i < this.n; i++) {
+      term *= x - this.xs[i - 1];
+      result += term * this.dividedDifferenceTable[0][i];
+    }
+
+    return result;
+  }
+
+  generatePlotPoints(steps = 100) {
+    const minX = Math.min(...this.xs);
+    const maxX = Math.max(...this.xs);
+    const plotXs = [];
+    const plotYs = [];
+
+    for (let i = 0; i <= steps; i++) {
+      const x = minX + (i * (maxX - minX)) / steps;
+      plotXs.push(x);
+      plotYs.push(this.evaluate(x));
+    }
+
+    return { plotXs, plotYs };
+  }
+}
+
+// ✅ React Component: NewtonInterpolation
 function NewtonInterpolation() {
   const [points, setPoints] = useState([{ x: 0, y: 0 }]);
   const [interpolator, setInterpolator] = useState(null);
@@ -13,15 +84,15 @@ function NewtonInterpolation() {
   const [plotYs, setPlotYs] = useState([]);
 
   const addPoint = () => setPoints([...points, { x: 0, y: 0 }]);
+
   const handlePointChange = (index, key, value) => {
     const updated = [...points];
     updated[index][key] = parseFloat(value);
     setPoints(updated);
   };
 
-  // ฟังก์ชันบันทึก history ลง database
   const saveHistory = (methodName) => {
-    const equation = points.map((p, i) => `(${p.x}, ${p.y})`).join(", ");
+    const equation = points.map((p) => `(${p.x}, ${p.y})`).join(", ");
     fetch("http://localhost:5000/api/history", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -30,24 +101,33 @@ function NewtonInterpolation() {
         points: equation,
       }),
     })
-      .then(res => res.json())
-      .then(data => console.log("History saved:", data))
-      .catch(err => console.error("Error saving history:", err));
+      .then((res) => res.json())
+      .then((data) => console.log("History saved:", data))
+      .catch((err) => console.error("Error saving history:", err));
   };
 
   const calculate = () => {
-    const method = new NewtonInterpolationMethod(points);
-    const table = method.getTable();
-    const { plotXs, plotYs } = method.generatePlotPoints();
+    if (points.length < 2) {
+      alert("Please enter at least two points.");
+      return;
+    }
 
-    setInterpolator(method);
-    setDividedDiffTable(table);
-    setXs(method.getXs());
-    setYs(method.getYs());
-    setPlotXs(plotXs);
-    setPlotYs(plotYs);
+    try {
+      const method = new NewtonInterpolationMethod(points);
+      const table = method.getTable();
+      const { plotXs, plotYs } = method.generatePlotPoints();
 
-    saveHistory("Newton Divided-Differences Interpolation");
+      setInterpolator(method);
+      setDividedDiffTable(table);
+      setXs(method.getXs());
+      setYs(method.getYs());
+      setPlotXs(plotXs);
+      setPlotYs(plotYs);
+
+      saveHistory("Newton Divided-Differences Interpolation");
+    } catch (error) {
+      alert("Error in interpolation: " + error.message);
+    }
   };
 
   return (

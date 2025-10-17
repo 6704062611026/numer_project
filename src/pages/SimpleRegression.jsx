@@ -2,76 +2,95 @@ import React, { useState } from "react";
 import Plot from "react-plotly.js";
 import Header3 from "../components/Header3";
 
+// ✅ แยก OOP class สำหรับ Simple Linear Regression
+class SimpleLinearRegression {
+  constructor(points) {
+    this.points = points;
+    this.n = points.length;
+    this.a = 0;
+    this.b = 0;
+    this.computeCoefficients();
+  }
+
+  computeCoefficients() {
+    const sumX = this.points.reduce((sum, p) => sum + p.x, 0);
+    const sumY = this.points.reduce((sum, p) => sum + p.y, 0);
+    const sumXY = this.points.reduce((sum, p) => sum + p.x * p.y, 0);
+    const sumX2 = this.points.reduce((sum, p) => sum + p.x * p.x, 0);
+
+    const meanX = sumX / this.n;
+    const meanY = sumY / this.n;
+
+    const numerator = sumXY - this.n * meanX * meanY;
+    const denominator = sumX2 - this.n * meanX * meanX;
+
+    this.b = numerator / denominator;
+    this.a = meanY - this.b * meanX;
+  }
+
+  predict(x) {
+    return this.a + this.b * x;
+  }
+
+  getEquation() {
+    return `f(x) = ${this.a.toFixed(6)} + ${this.b.toFixed(6)} * x`;
+  }
+
+  getLineRange(minX, maxX) {
+    return [minX, maxX].map((x) => ({
+      x,
+      y: this.predict(x),
+    }));
+  }
+}
+
+// ✅ React Component
 function SimpleRegression() {
   const [points, setPoints] = useState([{ x: 0, y: 0 }, { x: 1, y: 1 }]);
   const [predictX, setPredictX] = useState("");
   const [predictedY, setPredictedY] = useState(null);
 
-  // เพิ่มจุดใหม่
   const addPoint = () => {
     setPoints([...points, { x: 0, y: 0 }]);
+    setPredictedY(null);
   };
 
-  // อัปเดตค่า x หรือ y ของแต่ละจุด
   const handlePointChange = (index, key, value) => {
     const updated = [...points];
     updated[index][key] = parseFloat(value);
     setPoints(updated);
-    setPredictedY(null); // reset result
+    setPredictedY(null);
   };
 
-  // คำนวณ regression coefficients
-  const calculateRegression = () => {
-    const n = points.length;
-    const sumX = points.reduce((sum, p) => sum + p.x, 0);
-    const sumY = points.reduce((sum, p) => sum + p.y, 0);
-    const sumXY = points.reduce((sum, p) => sum + p.x * p.y, 0);
-    const sumX2 = points.reduce((sum, p) => sum + p.x * p.x, 0);
-
-    const meanX = sumX / n;
-    const meanY = sumY / n;
-
-    const b = (sumXY - n * meanX * meanY) / (sumX2 - n * meanX * meanX);
-    const a = meanY - b * meanX;
-
-    return { a, b };
-  };
-
-  // บันทึก history ลง database
-  const saveHistory = (a, b) => {
-    const equation = `f(x) = ${a.toFixed(6)} + ${b.toFixed(6)}*x`;
+  const saveHistory = (regression) => {
     fetch("http://localhost:5000/api/history", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         method: "Simple Regression",
-        equation,
+        equation: regression.getEquation(),
       }),
     })
-      .then(res => res.json())
-      .then(data => console.log("History saved:", data))
-      .catch(err => console.error("Error saving history:", err));
+      .then((res) => res.json())
+      .then((data) => console.log("History saved:", data))
+      .catch((err) => console.error("Error saving history:", err));
   };
 
-  // คำนวณ predictedY และ save history
   const calculate = () => {
     if (predictX === "") return;
-    const { a, b } = calculateRegression();
+    const regression = new SimpleLinearRegression(points);
     const x = parseFloat(predictX);
-    const y = a + b * x;
+    const y = regression.predict(x);
     setPredictedY(y);
-    saveHistory(a, b);
+    saveHistory(regression);
   };
 
-  const { a, b } = calculateRegression();
-
-  // เตรียมข้อมูล plot
-  const sortedPoints = [...points].sort((p1, p2) => p1.x - p2.x);
-  const minX = Math.min(...sortedPoints.map(p => p.x));
-  const maxX = Math.max(...sortedPoints.map(p => p.x));
-  const range = maxX - minX;
-  const plotXs = [minX - range * 0.2, maxX + range * 0.2];
-  const plotYs = plotXs.map(x => a + b * x);
+  const regression = new SimpleLinearRegression(points);
+  const sortedPoints = [...points].sort((a, b) => a.x - b.x);
+  const minX = Math.min(...sortedPoints.map((p) => p.x));
+  const maxX = Math.max(...sortedPoints.map((p) => p.x));
+  const range = maxX - minX || 1;
+  const [p1, p2] = regression.getLineRange(minX - range * 0.2, maxX + range * 0.2);
 
   return (
     <>
@@ -158,8 +177,8 @@ function SimpleRegression() {
                     marker: { color: "red", size: 8 },
                   },
                   {
-                    x: plotXs,
-                    y: plotYs,
+                    x: [p1.x, p2.x],
+                    y: [p1.y, p2.y],
                     mode: "lines",
                     type: "scatter",
                     name: "Regression Line",

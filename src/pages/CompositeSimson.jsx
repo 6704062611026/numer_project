@@ -3,54 +3,69 @@ import Plot from "react-plotly.js";
 import { evaluate, parse } from "mathjs";
 import Header4 from "../components/Header4";
 
-function compositeSimpsonRule(fx, a, b, n) {
-  if (n % 2 !== 0) {
-    throw new Error("n must be an even number");
+// Class สำหรับ Composite Simpson's Rule
+class CompositeSimpson {
+  constructor(fx, a, b, n) {
+    if (n % 2 !== 0) {
+      throw new Error("n must be an even number");
+    }
+    this.fx = fx;
+    this.a = a;
+    this.b = b;
+    this.n = n;
   }
 
-  const h = (b - a) / n;
-  let sum = evaluate(fx, { x: a }) + evaluate(fx, { x: b });
-
-  for (let i = 1; i < n; i++) {
-    const x = a + i * h;
-    const coeff = i % 2 === 0 ? 2 : 4;
-    sum += coeff * evaluate(fx, { x });
+  evaluateFunction(x) {
+    return evaluate(this.fx, { x });
   }
 
-  return (h / 3) * sum;
+  calculate() {
+    const h = (this.b - this.a) / this.n;
+    let sum = this.evaluateFunction(this.a) + this.evaluateFunction(this.b);
+
+    for (let i = 1; i < this.n; i++) {
+      const x = this.a + i * h;
+      const coeff = i % 2 === 0 ? 2 : 4;
+      sum += coeff * this.evaluateFunction(x);
+    }
+
+    return (h / 3) * sum;
+  }
 }
 
 function CompositeSimpsonIntegration() {
   const [fx, setFx] = useState("x^3");
   const [a, setA] = useState(0);
   const [b, setB] = useState(4);
-  const [n, setN] = useState(4); 
+  const [n, setN] = useState(4); // ต้องเป็นเลขคู่
   const [result, setResult] = useState(null);
 
   const calculate = () => {
     try {
       const parsed = parse(fx);
-      parsed.evaluate({ x: 1 }); 
+      parsed.evaluate({ x: 1 });
 
-      const value = compositeSimpsonRule(fx, parseFloat(a), parseFloat(b), parseInt(n));
+      const compositeSimpson = new CompositeSimpson(fx, parseFloat(a), parseFloat(b), parseInt(n));
+      const value = compositeSimpson.calculate();
       setResult(value);
     } catch (error) {
       alert(error.message || "Invalid input!");
     }
-     fetch("http://localhost:5000/api/history", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    method: "CompositeSimson",
-    equation: fx,
-  }),
-})
-  .then((res) => res.json())
-  .then((data) => {
-    console.log("History saved:", data);
-  });
+
+    fetch("http://localhost:5000/api/history", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        method: "CompositeSimpson",
+        equation: fx,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("History saved:", data);
+      });
   };
 
   const plotXs = Array.from({ length: 200 }, (_, i) => {
@@ -65,7 +80,6 @@ function CompositeSimpsonIntegration() {
       return null;
     }
   });
- 
 
   return (
     <>

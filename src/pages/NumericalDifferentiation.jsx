@@ -4,6 +4,129 @@ import { BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
 import Header5 from "../components/Header5";
 
+// ✅ OOP Class: NumericalDifferentiator
+class NumericalDifferentiator {
+  constructor(fx, x, h, direction, order) {
+    this.fx = fx;
+    this.x = parseFloat(x);
+    this.h = parseFloat(h);
+    this.direction = direction;
+    this.order = order;
+  }
+
+  evaluateAt(val) {
+    return evaluate(this.fx, { x: val });
+  }
+
+  approximate() {
+    const x = this.x;
+    const h = this.h;
+    const order = this.order;
+    const values = {};
+    let approx = null;
+
+    switch (this.direction) {
+      case "forward":
+        if (order === 1) {
+          values.f_x = this.evaluateAt(x);
+          values.f_xh = this.evaluateAt(x + h);
+          approx = (values.f_xh - values.f_x) / h;
+        } else if (order === 2) {
+          values.f_x = this.evaluateAt(x);
+          values.f_xh = this.evaluateAt(x + h);
+          values.f_x2h = this.evaluateAt(x + 2 * h);
+          approx = (values.f_x2h - 2 * values.f_xh + values.f_x) / (h ** 2);
+        } else if (order === 3) {
+          values.f_x = this.evaluateAt(x);
+          values.f_xh = this.evaluateAt(x + h);
+          values.f_x2h = this.evaluateAt(x + 2 * h);
+          values.f_x3h = this.evaluateAt(x + 3 * h);
+          approx = (-values.f_x3h + 3 * values.f_x2h - 3 * values.f_xh + values.f_x) / (h ** 3);
+        } else if (order === 4) {
+          values.f_x = this.evaluateAt(x);
+          values.f_xh = this.evaluateAt(x + h);
+          values.f_x2h = this.evaluateAt(x + 2 * h);
+          values.f_x3h = this.evaluateAt(x + 3 * h);
+          values.f_x4h = this.evaluateAt(x + 4 * h);
+          approx = (values.f_x4h - 4 * values.f_x3h + 6 * values.f_x2h - 4 * values.f_xh + values.f_x) / (h ** 4);
+        }
+        break;
+
+      case "backward":
+        if (order === 1) {
+          values.f_x = this.evaluateAt(x);
+          values.f_xmh = this.evaluateAt(x - h);
+          approx = (values.f_x - values.f_xmh) / h;
+        } else if (order === 2) {
+          values.f_x = this.evaluateAt(x);
+          values.f_xmh = this.evaluateAt(x - h);
+          values.f_xm2h = this.evaluateAt(x - 2 * h);
+          approx = (values.f_x - 2 * values.f_xmh + values.f_xm2h) / (h ** 2);
+        } else if (order === 3) {
+          values.f_x = this.evaluateAt(x);
+          values.f_xmh = this.evaluateAt(x - h);
+          values.f_xm2h = this.evaluateAt(x - 2 * h);
+          values.f_xm3h = this.evaluateAt(x - 3 * h);
+          approx = (values.f_x - 3 * values.f_xmh + 3 * values.f_xm2h - values.f_xm3h) / (h ** 3);
+        } else if (order === 4) {
+          values.f_x = this.evaluateAt(x);
+          values.f_xmh = this.evaluateAt(x - h);
+          values.f_xm2h = this.evaluateAt(x - 2 * h);
+          values.f_xm3h = this.evaluateAt(x - 3 * h);
+          values.f_xm4h = this.evaluateAt(x - 4 * h);
+          approx = (values.f_x - 4 * values.f_xmh + 6 * values.f_xm2h - 4 * values.f_xm3h + values.f_xm4h) / (h ** 4);
+        }
+        break;
+
+      case "central":
+      default:
+        if (order === 1) {
+          values.f_xh = this.evaluateAt(x + h);
+          values.f_xmh = this.evaluateAt(x - h);
+          approx = (values.f_xh - values.f_xmh) / (2 * h);
+        } else if (order === 2) {
+          values.f_x = this.evaluateAt(x);
+          values.f_xh = this.evaluateAt(x + h);
+          values.f_xmh = this.evaluateAt(x - h);
+          approx = (values.f_xh - 2 * values.f_x + values.f_xmh) / (h ** 2);
+        } else if (order === 3) {
+          values.f_xp2h = this.evaluateAt(x + 2 * h);
+          values.f_xp1h = this.evaluateAt(x + h);
+          values.f_xm1h = this.evaluateAt(x - h);
+          values.f_xm2h = this.evaluateAt(x - 2 * h);
+          approx = (values.f_xm2h - 2 * values.f_xm1h + 2 * values.f_xp1h - values.f_xp2h) / (2 * h ** 3);
+        } else if (order === 4) {
+          values.f_x = this.evaluateAt(x);
+          values.f_xp1h = this.evaluateAt(x + h);
+          values.f_xp2h = this.evaluateAt(x + 2 * h);
+          values.f_xm1h = this.evaluateAt(x - h);
+          values.f_xm2h = this.evaluateAt(x - 2 * h);
+          approx = (values.f_xm2h - 4 * values.f_xm1h + 6 * values.f_x - 4 * values.f_xp1h + values.f_xp2h) / (h ** 4);
+        }
+        break;
+    }
+
+    return { approx, values };
+  }
+
+  exactDerivative() {
+    let d = this.fx;
+    for (let i = 0; i < this.order; i++) {
+      d = derivative(d, "x");
+    }
+    return d.evaluate({ x: this.x });
+  }
+
+  calculate() {
+    const { approx, values } = this.approximate();
+    const exact = this.exactDerivative();
+    const error = Math.abs((approx - exact) / exact) * 100;
+
+    return { approx, exact, error, values };
+  }
+}
+
+// ✅ React Component
 function NumericalDifferentiation() {
   const [fx, setFx] = useState("x^2");
   const [x, setX] = useState(2);
@@ -13,152 +136,46 @@ function NumericalDifferentiation() {
   const [result, setResult] = useState(null);
 
   const calculate = () => {
-    const xi = parseFloat(x);
-    const hh = parseFloat(h);
-    let approx;
-    let values = {};
-
     try {
-      switch (direction) {
-        case "forward":
-          if (order === 1) {
-            values.f_xh = evaluate(fx, { x: xi + hh });
-            values.f_x = evaluate(fx, { x: xi });
-            approx = (values.f_xh - values.f_x) / hh;
-          } else if (order === 2) {
-            values.f_x = evaluate(fx, { x: xi });
-            values.f_xh = evaluate(fx, { x: xi + hh });
-            values.f_x2h = evaluate(fx, { x: xi + 2 * hh });
-            approx = (values.f_x2h - 2 * values.f_xh + values.f_x) / (hh ** 2);
-          } else if (order === 3) {
-            values.f_x = evaluate(fx, { x: xi });
-            values.f_xh = evaluate(fx, { x: xi + hh });
-            values.f_x2h = evaluate(fx, { x: xi + 2 * hh });
-            values.f_x3h = evaluate(fx, { x: xi + 3 * hh });
-            approx = (-values.f_x3h + 3 * values.f_x2h - 3 * values.f_xh + values.f_x) / (hh ** 3);
-          } else if (order === 4) {
-            values.f_x = evaluate(fx, { x: xi });
-            values.f_xh = evaluate(fx, { x: xi + hh });
-            values.f_x2h = evaluate(fx, { x: xi + 2 * hh });
-            values.f_x3h = evaluate(fx, { x: xi + 3 * hh });
-            values.f_x4h = evaluate(fx, { x: xi + 4 * hh });
-            approx = (values.f_x4h - 4 * values.f_x3h + 6 * values.f_x2h - 4 * values.f_xh + values.f_x) / (hh ** 4);
-          }
-          break;
+      const diff = new NumericalDifferentiator(fx, x, h, direction, order);
+      const resultData = diff.calculate();
+      setResult(resultData);
 
-        case "backward":
-          if (order === 1) {
-            values.f_x = evaluate(fx, { x: xi });
-            values.f_xmh = evaluate(fx, { x: xi - hh });
-            approx = (values.f_x - values.f_xmh) / hh;
-          } else if (order === 2) {
-            values.f_x = evaluate(fx, { x: xi });
-            values.f_xmh = evaluate(fx, { x: xi - hh });
-            values.f_xm2h = evaluate(fx, { x: xi - 2 * hh });
-            approx = (values.f_x - 2 * values.f_xmh + values.f_xm2h) / (hh ** 2);
-          } else if (order === 3) {
-            values.f_x = evaluate(fx, { x: xi });
-            values.f_xmh = evaluate(fx, { x: xi - hh });
-            values.f_xm2h = evaluate(fx, { x: xi - 2 * hh });
-            values.f_xm3h = evaluate(fx, { x: xi - 3 * hh });
-            approx = (values.f_x - 3 * values.f_xmh + 3 * values.f_xm2h - values.f_xm3h) / (hh ** 3);
-          } else if (order === 4) {
-            values.f_x = evaluate(fx, { x: xi });
-            values.f_xmh = evaluate(fx, { x: xi - hh });
-            values.f_xm2h = evaluate(fx, { x: xi - 2 * hh });
-            values.f_xm3h = evaluate(fx, { x: xi - 3 * hh });
-            values.f_xm4h = evaluate(fx, { x: xi - 4 * hh });
-            approx = (values.f_x - 4 * values.f_xmh + 6 * values.f_xm2h - 4 * values.f_xm3h + values.f_xm4h) / (hh ** 4);
-          }
-          break;
-
-        case "central":
-        default:
-          if (order === 1) {
-            values.f_xh = evaluate(fx, { x: xi + hh });
-            values.f_xmh = evaluate(fx, { x: xi - hh });
-            approx = (values.f_xh - values.f_xmh) / (2 * hh);
-          } else if (order === 2) {
-            values.f_x = evaluate(fx, { x: xi });
-            values.f_xh = evaluate(fx, { x: xi + hh });
-            values.f_xmh = evaluate(fx, { x: xi - hh });
-            approx = (values.f_xh - 2 * values.f_x + values.f_xmh) / (hh ** 2);
-          } else if (order === 3) {
-            values.f_xp2h = evaluate(fx, { x: xi + 2 * hh });
-            values.f_xp1h = evaluate(fx, { x: xi + hh });
-            values.f_xm1h = evaluate(fx, { x: xi - hh });
-            values.f_xm2h = evaluate(fx, { x: xi - 2 * hh });
-            approx = (values.f_xm2h - 2 * values.f_xm1h + 2 * values.f_xp1h - values.f_xp2h) / (2 * hh ** 3);
-          } else if (order === 4) {
-            values.f_x = evaluate(fx, { x: xi });
-            values.f_xp1h = evaluate(fx, { x: xi + hh });
-            values.f_xp2h = evaluate(fx, { x: xi + 2 * hh });
-            values.f_xm1h = evaluate(fx, { x: xi - hh });
-            values.f_xm2h = evaluate(fx, { x: xi - 2 * hh });
-            approx = (values.f_xm2h - 4 * values.f_xm1h + 6 * values.f_x - 4 * values.f_xp1h + values.f_xp2h) / (hh ** 4);
-          }
-          break;
-      }
-
-      // หา exact derivative
-      let d = fx;
-      for (let i = 0; i < order; i++) {
-        d = derivative(d, "x");
-      }
-      const trueDiff = d.evaluate({ x: xi });
-
-      const error = Math.abs((approx - trueDiff) / trueDiff) * 100;
-
-      setResult({
-        approx,
-        exact: trueDiff,
-        error,
-        values,
-      });
+      fetch("http://localhost:5000/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          method: "NumericalDifferentiation",
+          equation: fx,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => console.log("History saved:", data));
     } catch (err) {
-      alert("Function parsing error. Please check your expression.");
+      alert("Error: " + err.message);
     }
-     fetch("http://localhost:5000/api/history", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    method: "NumericalDifferentiation",
-    equation: fx,
-  }),
-})
-  .then((res) => res.json())
-  .then((data) => {
-    console.log("History saved:", data);
-  });
   };
 
   const renderFormula = () => {
     const xi = parseFloat(x);
     const hh = parseFloat(h);
     const v = result?.values || {};
-
     const f = (val) => val?.toFixed(6);
 
-    // You can expand these with more formulas if needed
     if (direction === "central" && order === 4) {
       return (
         <>
           <BlockMath math={`f^{(4)}(x) \\approx \\frac{f(x - 2h) - 4f(x - h) + 6f(x) - 4f(x + h) + f(x + 2h)}{h^4}`} />
-          <BlockMath math={`= \\frac{${f(v.f_xm2h)} - 4(${f(v.f_xmh)}) + 6(${f(v.f_x)}) - 4(${f(v.f_xp1h)}) + ${f(v.f_xp2h)}}{${(hh ** 4).toFixed(6)}}`} />
+          <BlockMath math={`= \\frac{${f(v.f_xm2h)} - 4(${f(v.f_xm1h)}) + 6(${f(v.f_x)}) - 4(${f(v.f_xp1h)}) + ${f(v.f_xp2h)}}{${(hh ** 4).toFixed(6)}}`} />
           <BlockMath math={`= ${result.approx.toFixed(6)}`} />
         </>
       );
     }
 
-    // สามารถเพิ่ม case สำหรับแต่ละ direction + order ได้ตามโครงสร้างเดียวกัน
-
     return (
-      <BlockMath math={`\\text{No detailed formula rendered for this case yet.}`}/>
+      <BlockMath math={`\\text{No detailed formula rendered for this case yet.}`} />
     );
   };
- 
 
   return (
     <>

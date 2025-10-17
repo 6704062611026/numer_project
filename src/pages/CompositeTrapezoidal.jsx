@@ -3,16 +3,49 @@ import Plot from "react-plotly.js";
 import { evaluate, parse } from "mathjs";
 import Header4 from "../components/Header4";
 
-function compositeTrapezoidalRule(fx, a, b, n) {
-  const h = (b - a) / n;
-  let sum = 0.5 * (evaluate(fx, { x: a }) + evaluate(fx, { x: b }));
-
-  for (let i = 1; i < n; i++) {
-    const x = a + i * h;
-    sum += evaluate(fx, { x });
+// Class สำหรับ Composite Trapezoidal Rule
+class CompositeTrapezoidal {
+  constructor(fx, a, b, n) {
+    this.fx = fx;
+    this.a = a;
+    this.b = b;
+    this.n = n;
   }
 
-  return h * sum;
+  evaluateFunction(x) {
+    return evaluate(this.fx, { x });
+  }
+
+  calculate() {
+    const h = (this.b - this.a) / this.n;
+    let sum = 0.5 * (this.evaluateFunction(this.a) + this.evaluateFunction(this.b));
+
+    for (let i = 1; i < this.n; i++) {
+      const x = this.a + i * h;
+      sum += this.evaluateFunction(x);
+    }
+
+    return h * sum;
+  }
+
+  getTrapezoidsData() {
+    const h = (this.b - this.a) / this.n;
+    const trapezoids = [];
+
+    for (let i = 0; i < this.n; i++) {
+      const x0 = this.a + i * h;
+      const x1 = x0 + h;
+      const y0 = this.evaluateFunction(x0);
+      const y1 = this.evaluateFunction(x1);
+
+      trapezoids.push({
+        x: [x0, x0, x1, x1],
+        y: [0, y0, y1, 0],
+      });
+    }
+
+    return trapezoids;
+  }
 }
 
 function CompositeTrapezoidalIntegration() {
@@ -24,30 +57,34 @@ function CompositeTrapezoidalIntegration() {
 
   const calculate = () => {
     try {
-      const parsed = parse(fx); 
-      parsed.evaluate({ x: 1 }); 
+      const parsed = parse(fx);
+      parsed.evaluate({ x: 1 });
 
-      const value = compositeTrapezoidalRule(fx, parseFloat(a), parseFloat(b), parseInt(n));
-      setResult(value);
-    } catch (error) {
+      const trapezoidal = new CompositeTrapezoidal(
+        fx,
+        parseFloat(a),
+        parseFloat(b),
+        parseInt(n)
+      );
+      const value = trapezoidal.calculate();
+      setResult({ value, trapezoidal });
+    } catch {
       alert("Invalid function expression!");
     }
+
     fetch("http://localhost:5000/api/history", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    method: "CompositeTrapezoidal",
-    equation: fx,
-  }),
-})
-  .then((res) => res.json())
-  .then((data) => {
-    console.log("History saved:", data);
-  });
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "CompositeTrapezoidal",
+        equation: fx,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => console.log("History saved:", data));
   };
 
+  // เตรียมข้อมูลกราฟ
   const plotXs = Array.from({ length: 200 }, (_, i) => {
     const step = (b - a) / 199;
     return parseFloat(a) + i * step;
@@ -61,21 +98,7 @@ function CompositeTrapezoidalIntegration() {
     }
   });
 
-  const trapezoids = [];
-  const h = (b - a) / n;
-
-  for (let i = 0; i < n; i++) {
-    const x0 = parseFloat(a) + i * h;
-    const x1 = x0 + h;
-    const y0 = evaluate(fx, { x: x0 });
-    const y1 = evaluate(fx, { x: x1 });
-
-    trapezoids.push({
-      x: [x0, x0, x1, x1],
-      y: [0, y0, y1, 0],
-    });
-  }
-
+  const trapezoids = result?.trapezoidal?.getTrapezoidsData() || [];
 
   return (
     <>
@@ -131,13 +154,15 @@ function CompositeTrapezoidalIntegration() {
 
         {result !== null && (
           <h3 style={{ textAlign: "center", color: "#1e3a8a" }}>
-            ∫ f(x) dx from {a} to {b} ≈ {result.toFixed(6)}
+            ∫ f(x) dx from {a} to {b} ≈ {result.value.toFixed(6)}
           </h3>
         )}
 
         {result !== null && (
           <>
-            <h2 style={{ color: "#1e3a8a", textAlign: "center", marginTop: "2rem" }}>
+            <h2
+              style={{ color: "#1e3a8a", textAlign: "center", marginTop: "2rem" }}
+            >
               Graph with Trapezoids
             </h2>
             <div style={{ width: 700, height: 500, margin: "0 auto" }}>

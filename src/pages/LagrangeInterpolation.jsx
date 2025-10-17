@@ -2,48 +2,61 @@ import React, { useState } from "react";
 import Plot from "react-plotly.js";
 import Header2 from "../components/Header2";
 
-function LagrangeInterpolation() {
-  const [points, setPoints] = useState([{ x: 0, y: 0 }]);
-  const [interpolatedX, setInterpolatedX] = useState("");
-  const [interpolatedY, setInterpolatedY] = useState(null);
+// ✅ LagrangeInterpolator class (OOP)
+class LagrangeInterpolator {
+  constructor(points) {
+    this.points = points.sort((a, b) => a.x - b.x);
+  }
 
-  const addPoint = () => {
-    setPoints([...points, { x: 0, y: 0 }]);
-  };
-
-  const handlePointChange = (index, key, value) => {
-    const updated = [...points];
-    updated[index][key] = parseFloat(value);
-    setPoints(updated);
-  };
-
-  const lagrangeInterpolation = (xValue) => {
-    const n = points.length;
+  evaluate(x) {
+    const n = this.points.length;
     let result = 0;
 
     for (let i = 0; i < n; i++) {
-      let term = points[i].y;
+      let term = this.points[i].y;
       for (let j = 0; j < n; j++) {
         if (j !== i) {
-          term *= (xValue - points[j].x) / (points[i].x - points[j].x);
+          term *= (x - this.points[j].x) / (this.points[i].x - this.points[j].x);
         }
       }
       result += term;
     }
 
     return result;
+  }
+
+  generatePlotPoints(steps = 100) {
+    const xs = this.points.map(p => p.x);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const plotXs = Array.from({ length: steps }, (_, i) => minX + ((maxX - minX) * i) / (steps - 1));
+    const plotYs = plotXs.map((x) => this.evaluate(x));
+    return { plotXs, plotYs };
+  }
+}
+
+// ✅ React component
+function LagrangeInterpolation() {
+  const [points, setPoints] = useState([{ x: 0, y: 0 }]);
+  const [interpolatedX, setInterpolatedX] = useState("");
+  const [interpolatedY, setInterpolatedY] = useState(null);
+
+  const addPoint = () => setPoints([...points, { x: 0, y: 0 }]);
+  const handlePointChange = (index, key, value) => {
+    const updated = [...points];
+    updated[index][key] = parseFloat(value);
+    setPoints(updated);
   };
 
   const calculate = () => {
     if (interpolatedX === "") return;
-    const y = lagrangeInterpolation(parseFloat(interpolatedX));
+    const interpolator = new LagrangeInterpolator(points);
+    const y = interpolator.evaluate(parseFloat(interpolatedX));
     setInterpolatedY(y);
   };
 
-  const minX = Math.min(...points.map((p) => p.x));
-  const maxX = Math.max(...points.map((p) => p.x));
-  const plotXs = Array.from({ length: 100 }, (_, i) => minX + ((maxX - minX) * i) / 99);
-  const plotYs = plotXs.map((x) => lagrangeInterpolation(x));
+  const interpolator = new LagrangeInterpolator(points);
+  const { plotXs, plotYs } = interpolator.generatePlotPoints();
 
   return (
     <>
@@ -114,41 +127,40 @@ function LagrangeInterpolation() {
         )}
 
         {interpolatedY !== null && (
-  <>
-    <h2 style={{ color: "#1e3a8a", textAlign: "center", marginTop: "2rem" }}>Graph</h2>
-    <div style={{ width: 600, height: 400, margin: "0 auto" }}>
-      <Plot
-        data={[
-          {
-            x: points.map((p) => p.x),
-            y: points.map((p) => p.y),
-            mode: "markers",
-            type: "scatter",
-            name: "Points",
-            marker: { color: "red", size: 8 },
-          },
-          {
-            x: plotXs,
-            y: plotYs,
-            mode: "lines",
-            type: "scatter",
-            name: "Interpolated Curve",
-            line: { color: "#1e3a8a" },
-          },
-        ]}
-        layout={{
-          title: "Lagrange Interpolation",
-          xaxis: { title: "x" },
-          yaxis: { title: "f(x)" },
-          plot_bgcolor: "#f9fafb",
-          paper_bgcolor: "#f9fafb",
-          font: { color: "#1e293b" },
-        }}
-      />
-    </div>
-  </>
-)}
-
+          <>
+            <h2 style={{ color: "#1e3a8a", textAlign: "center", marginTop: "2rem" }}>Graph</h2>
+            <div style={{ width: 600, height: 400, margin: "0 auto" }}>
+              <Plot
+                data={[
+                  {
+                    x: points.map((p) => p.x),
+                    y: points.map((p) => p.y),
+                    mode: "markers",
+                    type: "scatter",
+                    name: "Points",
+                    marker: { color: "red", size: 8 },
+                  },
+                  {
+                    x: plotXs,
+                    y: plotYs,
+                    mode: "lines",
+                    type: "scatter",
+                    name: "Interpolated Curve",
+                    line: { color: "#1e3a8a" },
+                  },
+                ]}
+                layout={{
+                  title: "Lagrange Interpolation",
+                  xaxis: { title: "x" },
+                  yaxis: { title: "f(x)" },
+                  plot_bgcolor: "#f9fafb",
+                  paper_bgcolor: "#f9fafb",
+                  font: { color: "#1e293b" },
+                }}
+              />
+            </div>
+          </>
+        )}
       </div>
     </>
   );

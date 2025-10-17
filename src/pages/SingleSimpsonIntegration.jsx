@@ -3,13 +3,26 @@ import Plot from "react-plotly.js";
 import { evaluate, parse } from "mathjs";
 import Header4 from "../components/Header4";
 
-function singleSimpsonRule(fx, a, b) {
-  const fa = evaluate(fx, { x: a });
-  const fb = evaluate(fx, { x: b });
-  const mid = (a + b) / 2;
-  const fmid = evaluate(fx, { x: mid });
+// Class สำหรับ Single Simpson's Rule
+class SingleSimpson {
+  constructor(fx, a, b) {
+    this.fx = fx;
+    this.a = a;
+    this.b = b;
+  }
 
-  return ((b - a) / 6) * (fa + 4 * fmid + fb);
+  evaluateFunction(x) {
+    return evaluate(this.fx, { x });
+  }
+
+  calculate() {
+    const fa = this.evaluateFunction(this.a);
+    const fb = this.evaluateFunction(this.b);
+    const mid = (this.a + this.b) / 2;
+    const fmid = this.evaluateFunction(mid);
+
+    return ((this.b - this.a) / 6) * (fa + 4 * fmid + fb);
+  }
 }
 
 function SingleSimpsonIntegration() {
@@ -23,25 +36,27 @@ function SingleSimpsonIntegration() {
       const parsed = parse(fx);
       parsed.evaluate({ x: 1 });
 
-      const value = singleSimpsonRule(fx, parseFloat(a), parseFloat(b));
+      const simpson = new SingleSimpson(fx, parseFloat(a), parseFloat(b));
+      const value = simpson.calculate();
       setResult(value);
     } catch (error) {
       alert("Invalid function expression!");
     }
+
     fetch("http://localhost:5000/api/history", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    method: "SingleSimpsonIntegration",
-    equation: fx,
-  }),
-})
-  .then((res) => res.json())
-  .then((data) => {
-    console.log("History saved:", data);
-  });
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        method: "SingleSimpsonIntegration",
+        equation: fx,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("History saved:", data);
+      });
   };
 
   const plotXs = Array.from({ length: 200 }, (_, i) => {
@@ -56,8 +71,6 @@ function SingleSimpsonIntegration() {
       return null;
     }
   });
-
-  
 
   return (
     <>

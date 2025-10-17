@@ -2,56 +2,68 @@ import React, { useState } from "react";
 import Plot from "react-plotly.js";
 import Header2 from "../components/Header2";
 
-function computeSpline(points) {
-  const n = points.length - 1;
-  const a = points.map(p => p.y);
-  const x = points.map(p => p.x);
-  const h = Array(n);
-  for (let i = 0; i < n; i++) h[i] = x[i + 1] - x[i];
+// ✅ CubicSpline class (OOP)
+class CubicSpline {
+  constructor(points) {
+    this.points = points.sort((a, b) => a.x - b.x);
+    this.n = this.points.length - 1;
+    this.x = this.points.map(p => p.x);
+    this.a = this.points.map(p => p.y);
+    this.b = Array(this.n).fill(0);
+    this.c = Array(this.n + 1).fill(0);
+    this.d = Array(this.n).fill(0);
+    this.h = Array(this.n);
 
-  const alpha = Array(n).fill(0);
-  for (let i = 1; i < n; i++) {
-    alpha[i] = (3 / h[i]) * (a[i + 1] - a[i]) - (3 / h[i - 1]) * (a[i] - a[i - 1]);
-  }
+    for (let i = 0; i < this.n; i++) {
+      this.h[i] = this.x[i + 1] - this.x[i];
+    }
 
-  const l = Array(n + 1).fill(0);
-  const mu = Array(n).fill(0);
-  const z = Array(n + 1).fill(0);
-  l[0] = 1;
+    const alpha = Array(this.n).fill(0);
+    for (let i = 1; i < this.n; i++) {
+      alpha[i] = (3 / this.h[i]) * (this.a[i + 1] - this.a[i]) - (3 / this.h[i - 1]) * (this.a[i] - this.a[i - 1]);
+    }
 
-  for (let i = 1; i < n; i++) {
-    l[i] = 2 * (x[i + 1] - x[i - 1]) - h[i - 1] * mu[i - 1];
-    mu[i] = h[i] / l[i];
-    z[i] = (alpha[i] - h[i - 1] * z[i - 1]) / l[i];
-  }
+    const l = Array(this.n + 1).fill(0);
+    const mu = Array(this.n).fill(0);
+    const z = Array(this.n + 1).fill(0);
 
-  l[n] = 1;
-  const c = Array(n + 1).fill(0);
-  const b = Array(n).fill(0);
-  const d = Array(n).fill(0);
+    l[0] = 1;
+    for (let i = 1; i < this.n; i++) {
+      l[i] = 2 * (this.x[i + 1] - this.x[i - 1]) - this.h[i - 1] * mu[i - 1];
+      mu[i] = this.h[i] / l[i];
+      z[i] = (alpha[i] - this.h[i - 1] * z[i - 1]) / l[i];
+    }
+    l[this.n] = 1;
 
-  for (let j = n - 1; j >= 0; j--) {
-    c[j] = z[j] - mu[j] * c[j + 1];
-    b[j] = (a[j + 1] - a[j]) / h[j] - (h[j] * (c[j + 1] + 2 * c[j])) / 3;
-    d[j] = (c[j + 1] - c[j]) / (3 * h[j]);
-  }
-
-  return { a, b, c, d, x };
-}
-
-function evaluateSpline(spline, xVal) {
-  const { a, b, c, d, x } = spline;
-  let i = x.length - 2;
-  for (let j = 0; j < x.length - 1; j++) {
-    if (xVal >= x[j] && xVal <= x[j + 1]) {
-      i = j;
-      break;
+    for (let j = this.n - 1; j >= 0; j--) {
+      this.c[j] = z[j] - mu[j] * this.c[j + 1];
+      this.b[j] = (this.a[j + 1] - this.a[j]) / this.h[j] - this.h[j] * (this.c[j + 1] + 2 * this.c[j]) / 3;
+      this.d[j] = (this.c[j + 1] - this.c[j]) / (3 * this.h[j]);
     }
   }
-  const dx = xVal - x[i];
-  return a[i] + b[i] * dx + c[i] * dx ** 2 + d[i] * dx ** 3;
+
+  evaluate(xVal) {
+    let i = this.n - 1;
+    for (let j = 0; j < this.n; j++) {
+      if (xVal >= this.x[j] && xVal <= this.x[j + 1]) {
+        i = j;
+        break;
+      }
+    }
+    const dx = xVal - this.x[i];
+    return this.a[i] + this.b[i] * dx + this.c[i] * dx ** 2 + this.d[i] * dx ** 3;
+  }
+
+  generatePlotPoints(steps = 200) {
+    const minX = Math.min(...this.x);
+    const maxX = Math.max(...this.x);
+    const plotXs = Array.from({ length: steps }, (_, i) => minX + ((maxX - minX) * i) / (steps - 1));
+    const plotYs = plotXs.map(x => this.evaluate(x));
+    return { plotXs, plotYs };
+  }
 }
 
+// ✅ React Component
 function SplineInterpolation() {
   const [points, setPoints] = useState([{ x: 0, y: 0 }, { x: 1, y: 1 }]);
   const [interpolatedX, setInterpolatedX] = useState("");
@@ -64,9 +76,8 @@ function SplineInterpolation() {
     setPoints(updated);
   };
 
-  // บันทึก history ลง database
-  const saveHistory = (spline) => {
-    const equation = points.map((p, i) => `(${p.x}, ${p.y})`).join(", ");
+  const saveHistory = () => {
+    const equation = points.map((p) => `(${p.x}, ${p.y})`).join(", ");
     fetch("http://localhost:5000/api/history", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -75,26 +86,21 @@ function SplineInterpolation() {
         points: equation,
       }),
     })
-      .then(res => res.json())
-      .then(data => console.log("History saved:", data))
-      .catch(err => console.error("Error saving history:", err));
+      .then((res) => res.json())
+      .then((data) => console.log("History saved:", data))
+      .catch((err) => console.error("Error saving history:", err));
   };
 
   const calculate = () => {
     if (interpolatedX === "") return;
-    const sorted = [...points].sort((a, b) => a.x - b.x);
-    const spline = computeSpline(sorted);
-    const y = evaluateSpline(spline, parseFloat(interpolatedX));
+    const spline = new CubicSpline(points);
+    const y = spline.evaluate(parseFloat(interpolatedX));
     setInterpolatedY(y);
-    saveHistory(spline);
+    saveHistory();
   };
 
-  const sortedPoints = [...points].sort((a, b) => a.x - b.x);
-  const minX = Math.min(...sortedPoints.map((p) => p.x));
-  const maxX = Math.max(...sortedPoints.map((p) => p.x));
-  const spline = computeSpline(sortedPoints);
-  const plotXs = Array.from({ length: 200 }, (_, i) => minX + ((maxX - minX) * i) / 199);
-  const plotYs = plotXs.map((x) => evaluateSpline(spline, x));
+  const spline = new CubicSpline(points);
+  const { plotXs, plotYs } = spline.generatePlotPoints();
 
   return (
     <>
@@ -105,20 +111,24 @@ function SplineInterpolation() {
         {points.map((point, index) => (
           <div key={index} style={{ textAlign: "center", marginBottom: "1rem" }}>
             <label style={{ marginRight: 8 }}>x{index + 1}:</label>
-            <input type="number" value={point.x} onChange={(e) => handlePointChange(index, "x", e.target.value)} style={{ marginRight: 16 }}/>
+            <input type="number" value={point.x} onChange={(e) => handlePointChange(index, "x", e.target.value)} style={{ marginRight: 16 }} />
             <label style={{ marginRight: 8 }}>y{index + 1}:</label>
-            <input type="number" value={point.y} onChange={(e) => handlePointChange(index, "y", e.target.value)}/>
+            <input type="number" value={point.y} onChange={(e) => handlePointChange(index, "y", e.target.value)} />
           </div>
         ))}
 
         <div style={{ textAlign: "center", marginBottom: "1rem" }}>
-          <button onClick={addPoint} style={{ marginRight: 10, padding: "0.4rem 1rem", backgroundColor: "#60a5fa", border: "none", borderRadius: 4, color: "white" }}>Add Point</button>
+          <button onClick={addPoint} style={{ marginRight: 10, padding: "0.4rem 1rem", backgroundColor: "#60a5fa", border: "none", borderRadius: 4, color: "white" }}>
+            Add Point
+          </button>
         </div>
 
         <div style={{ textAlign: "center", marginBottom: "1rem" }}>
           <label style={{ marginRight: 8 }}>Find f(x) at x = </label>
-          <input type="number" value={interpolatedX} onChange={(e) => setInterpolatedX(e.target.value)} style={{ marginRight: 10 }}/>
-          <button onClick={calculate} style={{ padding: "0.4rem 1rem", backgroundColor: "#1e3a8a", color: "white", border: "none", borderRadius: 4 }}>Calculate</button>
+          <input type="number" value={interpolatedX} onChange={(e) => setInterpolatedX(e.target.value)} style={{ marginRight: 10 }} />
+          <button onClick={calculate} style={{ padding: "0.4rem 1rem", backgroundColor: "#1e3a8a", color: "white", border: "none", borderRadius: 4 }}>
+            Calculate
+          </button>
         </div>
 
         {interpolatedY !== null && (
@@ -134,11 +144,11 @@ function SplineInterpolation() {
               <Plot
                 data={[
                   {
-                    x: sortedPoints.map((p) => p.x),
-                    y: sortedPoints.map((p) => p.y),
+                    x: points.map((p) => p.x),
+                    y: points.map((p) => p.y),
                     mode: "markers",
                     type: "scatter",
-                    name: "Points",
+                    name: "Data Points",
                     marker: { color: "red", size: 8 },
                   },
                   {
